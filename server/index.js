@@ -28,10 +28,22 @@ const io = new Server(server, {
 Regular HTTP requests won't work because socket.io connections operate differently,
 and the code below will only handle on socket.io rtc connections. */
 io.on("connection", (socket) => {
-    console.log("User connected: " + socket.id);
+    /* The socket parameter represents an individual connection to the Socket.IO server.
+    Each time a client connects to the server, a new socket object is created to represent that connection.
+    Each socket object can be thought of as a representation of a user or a client that is connected to the server. */
+    console.log(socket.id + " connected.");
 
     socket.on("disconnect", () => {
-        console.log("User disconnected: " + socket.id);
+        console.log(socket.id + " disconnected.");
+    });
+
+    socket.on("join-room", ({ username, roomId }) => {
+        console.log(`${username} ${socket.id} joined room ${roomId}`);
+        socket.join(roomId);
+    });
+
+    socket.on("send-message", ({ username, content, roomId }) => {
+        io.to(roomId).emit("receive-message", { username, content });
     });
 });
 
