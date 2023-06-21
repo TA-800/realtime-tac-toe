@@ -1,113 +1,87 @@
-// This file is socket handler
-import { useEffect, useState, useRef } from "react";
-import { socket } from "../socket";
-import Chat, { Message } from "../components/chat";
+import Game from "../components/game";
+import useSocket from "../components/useSocketHook";
+import { createRef, useState } from "react";
 
 export default function GamePage() {
-    const [socketId, setSocketId] = useState("");
-    const [username, setUsername] = useState("");
-    const [roomJoined, setRoomJoined] = useState("");
-    const [roomMsgs, setRoomMsgs] = useState<Message[]>([
-        { content: "Hello", username: "John" },
-        { content: "Hi", username: "Jane" },
-        { content: "How are you?", username: "John" },
-        { content: "I'm fine", username: "Jane" },
-    ]);
-    const [disableJoinButton, setDisableJoinButton] = useState(true);
-    const joinRoomRef = useRef<HTMLInputElement>(null);
+    const { socket, connected } = useSocket();
+    const [availableRooms, setAvailableRooms] = useState<string[]>([]);
+    const [roomJoined, setRoomJoined] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+    const inputRef = createRef<HTMLInputElement>();
+    const usernameRef = createRef<HTMLInputElement>();
 
-    const onConnect = () => {
-        console.log("Connected to server");
-        setSocketId(socket.id);
+    const searchRooms = () => {
+        socket.emit("search-for-room", function (callback: string[]) {
+            console.log(callback);
+            setAvailableRooms(callback);
+        });
     };
 
-    const onDisconnect = () => {
-        console.log("Disconnected from server");
-        setSocketId("");
+    const joinRoom = (roomName: string, providedUsername: string) => {
+        socket.emit(
+            "attempt-join-room",
+            roomName,
+            providedUsername,
+            function (callback: { status: string; waiting: boolean; message: string }) {
+                console.log(callback);
+                if (callback.status === "success") {
+                    setUsername(providedUsername);
+                    setRoomJoined(roomName);
+                    if (!callback.waiting) {
+                        // If waiting is false, that means two players have joined the room and we can start the game
+                        socket.emit("start-game", roomName);
+                        /* This event needs to be emitted client-side because server (apparently) doesn't wait for player's join event to fully complete
+                        (which means server can emit start-game before player has fully successfully joined the room). */
+                    }
+                }
+                if (callback.status === "failure") {
+                    alert(callback.message);
+                    return;
+                }
+            }
+        );
     };
 
-    const onUserConnected = (msg: any) => {
-        console.log(msg);
-    };
-
-    const handleJoin = (roomId: string) => {
-        socket.emit("join-room", { username: username, roomId: roomId });
-        setRoomJoined(roomId);
-    };
-
-    const handleReceiveMessage = (msg: Message) => {
-        // Will also receive message sent by this client
-        setRoomMsgs((prev) => [...prev, msg]);
-    };
-
-    const emitMessage = (msg: Message) => {
-        socket.emit("send-message", { ...msg, roomId: roomJoined });
-    };
-
-    useEffect(() => {
-        socket.connect();
-        socket.on("connect", onConnect);
-        socket.on("disconnect", onDisconnect);
-        socket.on("user-connected", onUserConnected);
-        socket.on("receive-message", handleReceiveMessage);
-
-        return () => {
-            socket.off("connect", onConnect);
-            socket.off("disconnect", onDisconnect);
-            socket.off("user-connected", onUserConnected);
-            socket.off("receive-message", handleReceiveMessage);
-            socket.disconnect();
-        };
-    }, []);
-
-    if (!socketId) return <div>Connecting to server...</div>;
+    if (!connected) {
+        return <div>Connecting...</div>;
+    }
 
     return (
         <>
-            {roomJoined.length > 0 && (
+            Your socket id is: {socket.id}
+            {roomJoined && (
                 <div>
-                    <Chat
-                        roomId={roomJoined}
-                        username={username}
-                        emitMessage={emitMessage}
-                        handleReceiveMessage={handleReceiveMessage}
-                        roomMsgs={roomMsgs}
-                    />
+                    <Game username={username} />
                 </div>
             )}
-            {roomJoined.length <= 0 && (
-                <div className="h-full w-full @container">
-                    <div className="flex flex-col gap-5">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-sm opacity-75 pl-1">Set your username here.</span>
-                            <div className="flex flex-row gap-2">
-                                <input
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="Username"
-                                    className="bg-black p-2 rounded-md border-2 border-white/20"
-                                />
-                            </div>
+            {!roomJoined && (
+                <div className="flex flex-col">
+                    <div className="flex flex-col gap-2 w-72">
+                        <input
+                            ref={usernameRef}
+                            placeholder="Username"
+                            className="bg-zinc-900 border-2 border-white/20 rounded-md px-4 py-2 "
+                        />
+                        <input
+                            ref={inputRef}
+                            placeholder="Room ID"
+                            className="bg-zinc-900 border-2 border-white/20 rounded-md px-4 py-2 "
+                        />
+                        <div className="flex flex-row justify-between">
+                            <button
+                                onClick={() => joinRoom(inputRef.current!.value, usernameRef.current!.value)}
+                                className="bg-blue-600 rounded-md px-4 py-2 ">
+                                Join room
+                            </button>
+                            <button onClick={() => searchRooms()} className="bg-blue-600 rounded-md px-4 py-2">
+                                Search rooms
+                            </button>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <span className="text-sm opacity-75 pl-1">Enter Room ID below to join room.</span>
-                            <div className="flex flex-row gap-2">
-                                <input
-                                    ref={joinRoomRef}
-                                    onChange={(e) => {
-                                        // If input is empty, disable join button
-                                        if (e.target.value === "") setDisableJoinButton(true);
-                                        else setDisableJoinButton(false);
-                                    }}
-                                    placeholder="Room ID"
-                                    className="bg-black p-2 rounded-md border-2 border-white/20"
-                                />
-                                <button
-                                    className="bg-blue-700 px-4 rounded-md"
-                                    disabled={disableJoinButton}
-                                    onClick={() => handleJoin(joinRoomRef.current!.value)}>
-                                    Join
-                                </button>
-                            </div>
+                        {/* Available rooms */}
+                        <div className="bg-zinc-800 w-full h-64 overflow-y-scroll">
+                            {availableRooms.map((room, i) => (
+                                <div key={i}>{room}</div>
+                            ))}
                         </div>
                     </div>
                 </div>
