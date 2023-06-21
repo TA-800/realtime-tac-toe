@@ -60,23 +60,29 @@ export default function Game({ username, roomId }: { username: string; roomId: s
 
     return (
         <div className="border-2 border-blue-500/50">
-            <span>
-                Username: {username}, Room: {roomId}, {gameInfo ? "Player 2 joined." : "Waiting for a player..."}
-            </span>
+            <div className="flex flex-col gap-1">
+                <p className="font-semi-bold">{username}</p>
+                <p className="text-sm opacity-75">{roomId}</p>
+                <p className="text-xs opacity-50">{gameInfo ? "Player 2 joined." : "Waiting for a player..."}</p>
+            </div>
+            <p className="font-bold text-2xl text-center">GAME</p>
             {/* Board + Text chat container */}
             {gameInfo && (
                 <div className="flex lg:flex-row flex-col gap-2">
-                    <Board gameInfo={gameInfo}>
-                        {gameInfo.board.map((row, rowIndex) => {
-                            return row.map((cell, colIndex) => {
-                                return (
-                                    <Cell onClick={() => makeMove(rowIndex, colIndex)} key={rowIndex + colIndex}>
-                                        {cell}
-                                    </Cell>
-                                );
-                            });
-                        })}
-                    </Board>
+                    {gameInfo.winner === null && (
+                        <Board gameInfo={gameInfo}>
+                            {gameInfo.board.map((row, rowIndex) => {
+                                return row.map((cell, colIndex) => {
+                                    return (
+                                        <Cell onClick={() => makeMove(rowIndex, colIndex)} key={rowIndex + colIndex}>
+                                            {cell}
+                                        </Cell>
+                                    );
+                                });
+                            })}
+                        </Board>
+                    )}
+                    {gameInfo && gameInfo.winner !== null && <WinScreen winner={gameInfo.winner} />}
                     <TextChat />
                 </div>
             )}
@@ -103,6 +109,14 @@ function Board({ children, gameInfo }: { children: React.ReactNode; gameInfo?: G
     );
 }
 
+function WinScreen({ winner }: { winner: string }) {
+    return (
+        <div className="flex flex-col justify-center items-center gap-4 w-full h-72 border-2 border-white/20 bg-zinc-800">
+            <p className="text-4xl font-black">Winner: {winner}</p>
+        </div>
+    );
+}
+
 const Cell = forwardRef<HTMLButtonElement, ComponentProps<"button">>(function Cell({ className, children, ...rest }, ref) {
     return (
         // Give the cell same background color (but not transparent) to only keep the borders
@@ -113,5 +127,13 @@ const Cell = forwardRef<HTMLButtonElement, ComponentProps<"button">>(function Ce
 });
 
 function TextChat() {
-    return <div className="h-72 w-full border-2">Text chat</div>;
+    return (
+        <div className="h-72 w-full flex flex-col gap-2 bg-zinc-900 border-2 border-white/20">
+            <div className="w-full h-full bg-black overflow-y-scroll"></div>
+            <div className="w-full flex flex-row gap-2">
+                <input className="w-full p-2 bg-black rounded-md" placeholder="Enter message"></input>
+                <button className="px-4 bg-blue-600 rounded-md">Send</button>
+            </div>
+        </div>
+    );
 }
