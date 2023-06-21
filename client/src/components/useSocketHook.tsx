@@ -8,11 +8,9 @@ export default function useSocket() {
 
     const onConnect = () => {
         setConnected(true);
-        // console.log("Connected");
     };
     const onDisconnect = () => {
         setConnected(false);
-        // console.log("Disconnected");
     };
 
     useEffect(() => {

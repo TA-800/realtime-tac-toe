@@ -30,6 +30,7 @@ const io = new Server(server, {
 // Set up a Set to store available rooms
 const availableRooms = new Set();
 const gameInstances = new Map();
+const rematchRequests = new Map();
 
 // Send game information to both players in a given room
 function emitGameInfo(roomId, gameInstance) {
@@ -39,7 +40,7 @@ function emitGameInfo(roomId, gameInstance) {
 
 // Start game for a given room
 function startGame(roomId) {
-    console.log(`Starting game for room ${roomId}`);
+    // console.log(`Starting game for room ${roomId}`);
 
     // This if statement isn't necessary ...
     if (!gameInstances.has(roomId)) {
@@ -47,9 +48,7 @@ function startGame(roomId) {
     }
 
     const gameInstance = gameInstances.get(roomId);
-
-    console.log("GAMES");
-    console.log(gameInstances);
+    gameInstance.reset();
 
     io.to(roomId).emit("game-start", gameInstance.getGameInformation());
 }
@@ -85,7 +84,6 @@ io.on("connection", (socket) => {
         // Check if room already has two members
         const room = io.sockets.adapter.rooms.get(roomId);
         // rooms.get(roomId) will return array of socket ids in that room
-
         // If there was no one in the room
         if (!room || room.size == 0) {
             player = 1;
@@ -101,10 +99,12 @@ io.on("connection", (socket) => {
         else if (room.size == 1) {
             player = 2;
             socket.join(roomId);
+            // Share (2nd player) joining player's username with other player
+            io.to(roomId).emit("server-share-username", username);
             availableRooms.delete(roomId);
-            // Sending waiting: false means that the new client can send message to server to start game
             callback({
                 status: "success",
+                // Player 2 is always the second player to join and the callback will emit start-game event
                 player: player,
                 message: `${username} joined ${roomId}.`,
             });
@@ -121,8 +121,12 @@ io.on("connection", (socket) => {
     });
 
     socket.on("start-game", (roomId) => {
-        console.log(roomId);
         startGame(roomId);
+    });
+
+    socket.on("client-share-username", (roomId, providedUsername) => {
+        // Emit first player's username to second player
+        socket.broadcast.to(roomId).emit("server-share-username-final", providedUsername);
     });
 
     socket.on("make-move", (roomId, row, col, callback) => {
@@ -148,6 +152,18 @@ io.on("connection", (socket) => {
             message: "Move made.",
         });
         emitGameInfo(roomId, gameInstance);
+    });
+
+    socket.on("rematch-request", (roomId) => {
+        // Update rematchRequests map (roomId -> number of requests)
+        if (!rematchRequests.has(roomId)) rematchRequests.set(roomId, 1);
+        else rematchRequests.set(roomId, rematchRequests.get(roomId) + 1);
+
+        // If both players have requested a rematch, start a new game
+        if (rematchRequests.get(roomId) === 2) {
+            rematchRequests.delete(roomId);
+            startGame(roomId);
+        }
     });
 });
 
