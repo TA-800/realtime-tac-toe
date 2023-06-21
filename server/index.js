@@ -29,7 +29,9 @@ const io = new Server(server, {
 
 // Set up a Set to store available rooms
 const availableRooms = new Set();
+// Set up a Map to store game instances (room -> game instance)
 const gameInstances = new Map();
+// Set up a Map to store rematch requests (room -> number of rematch requests)
 const rematchRequests = new Map();
 
 // Send game information to both players in a given room
@@ -155,6 +157,8 @@ io.on("connection", (socket) => {
     });
 
     socket.on("rematch-request", (roomId) => {
+        // TODO: Ignore rematch requests from game which haven't ended
+
         // Update rematchRequests map (roomId -> number of requests)
         if (!rematchRequests.has(roomId)) rematchRequests.set(roomId, 1);
         else rematchRequests.set(roomId, rematchRequests.get(roomId) + 1);

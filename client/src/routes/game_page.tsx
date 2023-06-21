@@ -19,6 +19,11 @@ export default function GamePage() {
     };
 
     const joinRoom = (roomName: string, providedUsername: string) => {
+        if (providedUsername === "") {
+            alert("Please enter a username");
+            return;
+        }
+
         socket.emit(
             "attempt-join-room",
             roomName,
@@ -58,7 +63,7 @@ export default function GamePage() {
             )}
             {!roomJoined && (
                 <div className="flex flex-col">
-                    <div className="flex flex-col gap-2 w-72">
+                    <div className="flex flex-col gap-2 w-full">
                         <input
                             ref={usernameRef}
                             placeholder="Username"
@@ -80,9 +85,14 @@ export default function GamePage() {
                             </button>
                         </div>
                         {/* Available rooms */}
-                        <div className="bg-zinc-800 w-full h-64 overflow-y-scroll">
+                        <div className="bg-zinc-800 w-full h-64 overflow-y-scroll flex flex-col rounded-md p-2">
                             {availableRooms.map((room, i) => (
-                                <div key={i}>{room}</div>
+                                <button
+                                    onClick={() => joinRoom(room, usernameRef.current!.value)}
+                                    className="flex bg-black/30 p-4 rounded-md hover:bg-black/25 hover:outline outline-1 outline-white/10"
+                                    key={i}>
+                                    {room}
+                                </button>
                             ))}
                         </div>
                     </div>
