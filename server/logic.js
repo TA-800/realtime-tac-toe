@@ -14,7 +14,7 @@ class TicTacToe {
 
     // Return 0 if no move was made, 1 if move was made, 2 if move was made and game is over, 3 if move was made and game is over with draw
     makeMove(row, col) {
-        if (!isValidMove(row, col)) return 0;
+        if (!this.isValidMove(row, col)) return 0;
 
         if (this.board[row][col] == null) {
             this.board[row][col] = this.currentPlayer;
@@ -67,7 +67,7 @@ class TicTacToe {
 
     // Return true if move is valid, false otherwise
     isValidMove(row, col) {
-        if (row < 0 || row > 2 || col < 0 || col > 2) return false;
+        if (row < 0 || row > 2 || col < 0 || col > 2 || this.board[row][col] !== null) return false;
         return true;
     }
 
@@ -88,7 +88,13 @@ class TicTacToe {
             board: this.board,
             currentPlayer: this.currentPlayer,
             winner: this.winner,
+            moves: this.moves,
         };
+    }
+
+    // X: 1, 0: 2
+    getCurrentPlayerAsNumber() {
+        return this.currentPlayer === "X" ? 1 : 2;
     }
 }
 

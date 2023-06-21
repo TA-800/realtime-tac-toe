@@ -29,39 +29,29 @@ const io = new Server(server, {
 
 // Set up a Set to store available rooms
 const availableRooms = new Set();
+const gameInstances = new Map();
+
+// Send game information to both players in a given room
+function emitGameInfo(roomId, gameInstance) {
+    if (!gameInstance) gameInstance = gameInstances.get(roomId);
+    io.to(roomId).emit("game-info", gameInstance.getGameInformation());
+}
 
 // Start game for a given room
 function startGame(roomId) {
     console.log(`Starting game for room ${roomId}`);
 
-    let gameInstance = new TicTacToe();
-
-    // Get game information like board (populated cells), current player, and winner, then emit it to all clients in the room
-    function emitGameInfo() {
-        io.to(roomId).emit("game-information", gameInstance.getGameInformation());
+    // This if statement isn't necessary ...
+    if (!gameInstances.has(roomId)) {
+        gameInstances.set(roomId, new TicTacToe());
     }
 
-    // emitGameInfo();
-    io.to(roomId).emit("game-start", gameInstance.getGameInformation());
+    const gameInstance = gameInstances.get(roomId);
 
-    // Listen for moves made by clients
-    // io.to(roomId).on("make-move", (row, col, callback) => {
-    //     let result = gameInstance.makeMove(row, col);
-    //     if (result === 0) {
-    //         // Invalid move
-    //         callback(0);
-    //     } else if (result === 1) {
-    //         // Valid move, game still in progress
-    //         callback(1);
-    //     } else if (result === 2) {
-    //         // Valid move, game over
-    //         callback(2);
-    //     } else {
-    //         // Valid move, game over, tie
-    //         callback(3);
-    //     }
-    //     emitGameInfo();
-    // });
+    console.log("GAMES");
+    console.log(gameInstances);
+
+    io.to(roomId).emit("game-start", gameInstance.getGameInformation());
 }
 
 /* Initiate and detect events & connections on the socket.io server. 
@@ -74,6 +64,7 @@ io.on("connection", (socket) => {
 
     console.log(socket.id + " connected.");
     let username = "";
+    let player = null;
 
     /* The events being listened for are emitted by the client whose socket is in the socket parameter.
     There is no reason to check if the events are being emitted by the client of the socket parameter
@@ -97,30 +88,33 @@ io.on("connection", (socket) => {
 
         // If there was no one in the room
         if (!room || room.size == 0) {
+            player = 1;
             socket.join(roomId);
             availableRooms.add(roomId);
             callback({
                 status: "success",
-                waiting: true,
+                player: player,
                 message: `${username} joined ${roomId}.`,
             });
         }
         // If there was one person in the room
         else if (room.size == 1) {
+            player = 2;
             socket.join(roomId);
             availableRooms.delete(roomId);
             // Sending waiting: false means that the new client can send message to server to start game
             callback({
                 status: "success",
-                waiting: false,
+                player: player,
                 message: `${username} joined ${roomId}.`,
             });
         }
         // If there were already two people in the room (this could happen when custom roomId is typed in to enter)
         else {
+            player = null;
             callback({
                 status: "failure",
-                waiting: true,
+                player: player,
                 message: `${roomId} is full.`,
             });
         }
@@ -129,6 +123,31 @@ io.on("connection", (socket) => {
     socket.on("start-game", (roomId) => {
         console.log(roomId);
         startGame(roomId);
+    });
+
+    socket.on("make-move", (roomId, row, col, callback) => {
+        const gameInstance = gameInstances.get(roomId);
+
+        // First, check if current player is the one making the move
+        if (gameInstance.getCurrentPlayerAsNumber() !== player) {
+            callback({
+                status: "failure",
+                message: "It is not your turn.",
+            });
+            return;
+        }
+
+        const moveResult = gameInstance.makeMove(row, col);
+
+        // 0 -> no move was made (invalid move), 1 -> move was made, 2 -> move made and game is over with winner, 3 -> move made and game is over with draw
+        if (moveResult === 0) {
+            io.to(roomId).emit("invalid-move");
+        }
+        callback({
+            status: "success",
+            message: "Move made.",
+        });
+        emitGameInfo(roomId, gameInstance);
     });
 });
 

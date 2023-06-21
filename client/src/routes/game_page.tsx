@@ -7,6 +7,7 @@ export default function GamePage() {
     const [availableRooms, setAvailableRooms] = useState<string[]>([]);
     const [roomJoined, setRoomJoined] = useState<string>("");
     const [username, setUsername] = useState<string>("");
+    // const [playerNumber, setPlayerNumber] = useState<number | null>(null);
     const inputRef = createRef<HTMLInputElement>();
     const usernameRef = createRef<HTMLInputElement>();
 
@@ -22,13 +23,13 @@ export default function GamePage() {
             "attempt-join-room",
             roomName,
             providedUsername,
-            function (callback: { status: string; waiting: boolean; message: string }) {
+            function (callback: { status: string; player: number; message: string }) {
                 console.log(callback);
                 if (callback.status === "success") {
                     setUsername(providedUsername);
                     setRoomJoined(roomName);
-                    if (!callback.waiting) {
-                        // If waiting is false, that means two players have joined the room and we can start the game
+                    if (callback.player === 2) {
+                        // If player joined has number 2, that means two players have joined the room and we can start the game
                         socket.emit("start-game", roomName);
                         /* This event needs to be emitted client-side because server (apparently) doesn't wait for player's join event to fully complete
                         (which means server can emit start-game before player has fully successfully joined the room). */
@@ -51,7 +52,7 @@ export default function GamePage() {
             Your socket id is: {socket.id}
             {roomJoined && (
                 <div>
-                    <Game username={username} />
+                    <Game username={username} roomId={roomJoined} />
                 </div>
             )}
             {!roomJoined && (
