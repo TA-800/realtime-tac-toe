@@ -20,12 +20,9 @@ export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<
         selfPlayerType: "",
         opponentUsername: "",
     });
-    // const [opponentUsername, setOpponentUsername] = useState("");
     const [gameInfo, setGameInfo] = useState<GameInfoProps | null>(null);
 
-    const handleGameStart = (data: GameInfoProps) => {
-        console.log("Game started");
-        console.log(data);
+    const handleGameInfo = (data: GameInfoProps) => {
         setGameInfo(data);
     };
 
@@ -33,18 +30,12 @@ export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<
         alert("Invalid move");
     };
 
-    const handleGameInfo = (data: GameInfoProps) => {
-        console.log(data);
-        setGameInfo(data);
-    };
-
     const makeMove = (row: number, col: number) => {
-        console.log("Making move");
         socket.emit("make-move", roomInfo.roomId, row, col, function (callback: { status: string; message: string }) {
             if (callback.status === "failure") {
                 alert(callback.message);
                 return;
-            } else console.log("Move made");
+            }
         });
     };
 
@@ -54,41 +45,34 @@ export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<
         });
     };
 
-    // When you're the first player to join
-    const handleGetOpponentUsername = (data: string) => {
-        // Share your username with opponent
+    const handleGetOpponentUsername = (username: string) => {
+        // The server has shared with you the username of the opponent
         setRoomInfo((prev) => {
-            // State values are unaccessible outside the state setter function in handleGetOpponentUsername,
-            // so we call emit function here (where we have access to state values)
-            socket.emit("client-share-username", prev.roomId, prev.selfUsername);
+            // Return the favor
+            socket.emit("username-chain-second-client", prev.roomId, prev.selfUsername);
 
             return {
                 ...prev,
-                opponentUsername: data,
+                opponentUsername: username,
             };
         });
     };
 
-    // When you're the second player to join
-    const handleGetOpponentUsernameFinal = (data: string) => {
-        console.log("Getting opponent username final: " + data);
+    const handleGetOpponentUsernameFinal = (username: string) => {
         setRoomInfo((prev) => {
             return {
                 ...prev,
-                opponentUsername: data,
+                opponentUsername: username,
             };
         });
     };
 
-    // Set up all game event listeners
     useEffect(() => {
         if (!connected) return;
 
         socket.emit(
             "get-self-information",
             function (callback: { selfUsername: string; roomId: string; selfPlayerType: "X" | "O" }) {
-                console.log(callback);
-                console.log("Setting state");
                 setRoomInfo((prev) => ({
                     ...prev,
                     roomId: callback.roomId,
@@ -98,29 +82,39 @@ export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<
             }
         );
 
-        // Different from "start-game" emitted by client
-        socket.on("game-start", handleGameStart);
         socket.on("game-info", handleGameInfo);
         socket.on("invalid-move", handleInvalidMove);
         // When second player joins, server will send the username of the first player
-        socket.on("server-share-username", handleGetOpponentUsername);
-        socket.on("server-share-username-final", handleGetOpponentUsernameFinal);
+        socket.on("username-chain-server", handleGetOpponentUsername);
+        socket.on("username-chain-final", handleGetOpponentUsernameFinal);
         socket.on("player-disconnected", handlePlayerDisconnect);
 
         return () => {
-            socket.off("game-start", handleGameStart);
             socket.off("game-info", handleGameInfo);
             socket.off("invalid-move", handleInvalidMove);
-            socket.off("server-share-username", handleGetOpponentUsername);
-            socket.off("server-share-username-final", handleGetOpponentUsernameFinal);
+            socket.off("username-chain-server", handleGetOpponentUsername);
+            socket.off("username-chain-final", handleGetOpponentUsernameFinal);
             socket.off("player-disconnected", handlePlayerDisconnect);
         };
     }, []);
 
-    // Debug
-    // useEffect(() => {
-    //     console.log("Room info: " + JSON.stringify(roomInfo));
-    // }, [roomInfo]);
+    // Get usernames if they are empty
+    useEffect(() => {
+        // Don't do anything until we have a room ID
+        if (!roomInfo.roomId) return;
+
+        if (!roomInfo.opponentUsername) {
+            socket.emit("username-chain-start", roomInfo.roomId, roomInfo.selfUsername);
+        }
+
+        // Have we gotten an opponent username but no game info?
+        // Means we must have started the game but moved to a new page and back
+        if (roomInfo.opponentUsername && !gameInfo) {
+            socket.emit("make-move", roomInfo.roomId, -1, -1, function (callback: GameInfoProps) {
+                setGameInfo(callback);
+            });
+        }
+    }, [roomInfo]);
 
     const handlePlayerDisconnect = () => {
         alert("Opponent disconnected");

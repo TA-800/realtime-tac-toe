@@ -42,9 +42,6 @@ function emitGameInfo(roomId, gameInstance) {
 
 // Start game for a given room
 function startGame(roomId) {
-    // console.log(`Starting game for room ${roomId}`);
-
-    // This if statement isn't necessary ...
     if (!gameInstances.has(roomId)) {
         gameInstances.set(roomId, new TicTacToe());
     }
@@ -52,7 +49,7 @@ function startGame(roomId) {
     const gameInstance = gameInstances.get(roomId);
     gameInstance.reset();
 
-    io.to(roomId).emit("game-start", gameInstance.getGameInformation());
+    io.to(roomId).emit("game-info", gameInstance.getGameInformation());
 }
 
 /* Initiate and detect events & connections on the socket.io server. 
@@ -76,8 +73,6 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnecting", () => {
-        console.log("Rooms before disconnecting: " + [...socket.rooms]);
-
         // If the player was in a room
         if (socket.rooms.size > 1) {
             // First room of every socket is always the socket's own room (= socket.id)
@@ -151,8 +146,6 @@ io.on("connection", (socket) => {
         else if (room.size == 1) {
             player = 2;
             socket.join(roomId);
-            // Share (2nd player) joining player's username with other player
-            io.to(roomId).emit("server-share-username", username);
             availableRooms.delete(roomId);
             callback({
                 status: "success",
@@ -183,13 +176,27 @@ io.on("connection", (socket) => {
 
     socket.on("start-game", (roomId) => startGame(roomId));
 
-    socket.on("client-share-username", (roomId, firstPlayerUsername) => {
+    socket.on("username-chain-start", (roomId, providedUsername) => {
+        // Get all the socket ids in the room with id roomId
+        const room = io.sockets.adapter.rooms.get(roomId);
+        // If there is only one person in the room, don't do anything
+        if (room.size === 1) return;
+
         // Emit first player's username to second player
-        socket.broadcast.to(roomId).emit("server-share-username-final", firstPlayerUsername);
+        socket.broadcast.to(roomId).emit("username-chain-server", providedUsername);
+    });
+    socket.on("username-chain-second-client", (roomId, providedUsername) => {
+        socket.broadcast.to(roomId).emit("username-chain-final", providedUsername);
     });
 
     socket.on("make-move", (roomId, row, col, callback) => {
         const gameInstance = gameInstances.get(roomId);
+
+        // When make-move is used as a way to just retrieve information but not actually make any moves
+        if (row === -1 && col === -1) {
+            callback(gameInstance.getGameInformation());
+            return;
+        }
 
         // First, check if current player is the one making the move
         if (gameInstance.getCurrentPlayerAsNumber() !== player) {
