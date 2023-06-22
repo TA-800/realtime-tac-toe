@@ -46,7 +46,14 @@ export default function GamePage() {
     };
 
     useEffect(() => {
-        // Check if we had already joined room before
+        if (!connected) return;
+
+        socket.emit("get-self-information", function (callback: any) {
+            console.log(callback);
+            if (callback.roomId) {
+                setRoomJoined(true);
+            }
+        });
     }, []);
 
     if (!connected) {
@@ -85,7 +92,7 @@ export default function GamePage() {
                             </button>
                         </div>
                         {/* Available rooms */}
-                        <div className="bg-zinc-800 w-full h-64 overflow-y-scroll flex flex-col rounded-md p-2">
+                        <div className="bg-zinc-800 w-full h-64 overflow-y-scroll flex flex-col gap-1 rounded-md p-2">
                             {availableRooms.map((room, i) => (
                                 <button
                                     onClick={() => joinRoom(room, usernameRef.current!.value)}

@@ -78,7 +78,10 @@ io.on("connection", (socket) => {
     socket.on("disconnecting", () => {
         console.log("Rooms before disconnecting: " + [...socket.rooms]);
 
+        // If the player was in a room
         if (socket.rooms.size > 1) {
+            // First room of every socket is always the socket's own room (= socket.id)
+            // Second room is the game room that they've joined
             const gameRoom = [...socket.rooms][1];
 
             // Tell other player (if there is one) that this player has disconnected
@@ -89,11 +92,11 @@ io.on("connection", (socket) => {
             gameInstances.delete(gameRoom);
             // Remove room from rematch requests
             rematchRequests.delete(gameRoom);
-            // Get the socket ids of the remaining players in the the room and remove them from the room (there should be only 1 remaining player)
+            // Get the socket ids of the remaining players in the the room and remove them from the room
             const remainingPlayers = [...io.sockets.adapter.rooms.get(gameRoom)];
             remainingPlayers.forEach((player) => {
+                // There should be only 1 remaining player)
                 io.sockets.sockets.get(player).leave(gameRoom);
-                console.log("Player " + player + " left room " + gameRoom);
             });
         }
     });
@@ -120,6 +123,12 @@ io.on("connection", (socket) => {
                 message: "Please enter room ID.",
             });
             return;
+        }
+        if (!providedUsername) {
+            callback({
+                status: "failure",
+                message: "Please enter username.",
+            });
         }
 
         username = providedUsername;
@@ -165,21 +174,18 @@ io.on("connection", (socket) => {
 
     socket.on("get-self-information", (callback) => {
         callback({
-            // First room of every socket is always the socket's own room (= socket.id)
-            // Second room is the game room that they've joined
-            roomId: [...socket.rooms][1],
+            // Remember that first room in socket.rooms is the socket id of the socket itself
+            roomId: [...socket.rooms][1] || null,
             selfUsername: username,
             selfPlayerType: player === 1 ? "X" : "O",
         });
     });
 
-    socket.on("start-game", (roomId) => {
-        startGame(roomId);
-    });
+    socket.on("start-game", (roomId) => startGame(roomId));
 
-    socket.on("client-share-username", (roomId, providedUsername) => {
+    socket.on("client-share-username", (roomId, firstPlayerUsername) => {
         // Emit first player's username to second player
-        socket.broadcast.to(roomId).emit("server-share-username-final", providedUsername);
+        socket.broadcast.to(roomId).emit("server-share-username-final", firstPlayerUsername);
     });
 
     socket.on("make-move", (roomId, row, col, callback) => {

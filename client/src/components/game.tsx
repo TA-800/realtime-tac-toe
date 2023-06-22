@@ -84,7 +84,6 @@ export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<
     useEffect(() => {
         if (!connected) return;
 
-        // Either server-share-username can happen first or get-self-information, so we should allow for both without overwriting
         socket.emit(
             "get-self-information",
             function (callback: { selfUsername: string; roomId: string; selfPlayerType: "X" | "O" }) {
@@ -119,9 +118,9 @@ export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<
     }, []);
 
     // Debug
-    useEffect(() => {
-        console.log("Room info: " + JSON.stringify(roomInfo));
-    }, [roomInfo]);
+    // useEffect(() => {
+    //     console.log("Room info: " + JSON.stringify(roomInfo));
+    // }, [roomInfo]);
 
     const handlePlayerDisconnect = () => {
         alert("Opponent disconnected");
@@ -171,12 +170,12 @@ function Board({ children, gameInfo, player }: { children: React.ReactNode; game
         // Container Positioner
         // <div className="w-full h-full border-2 flex flex-row justify-around items-center">
         <div className="w-full h-full grid grid-cols-3 gap-1">
-            {/* Actual Board */}
-            <div className="bg-black/50 border-r-2 border-white/20 rounded-lg w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
+            {/* Actual Game TTT Board */}
+            <div className="bg-black/50 border-r-2 border-black w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
                 {children}
             </div>
             {/* Informational Board */}
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-l-2 border-white/20 bg-black/20">
+            <div className="flex flex-col items-center justify-center gap-4 border-l-2 border-black bg-black/20">
                 <span>You are Player {player}</span>
                 <span>Current Player: {gameInfo!.currentPlayer}</span>
                 <span>Winner: {gameInfo!.winner ?? "None"}</span>
@@ -212,7 +211,7 @@ function WinScreen({ winner, requestRematch }: { winner: string; requestRematch:
 const Cell = forwardRef<HTMLButtonElement, ComponentProps<"button">>(function Cell({ className, children, ...rest }, ref) {
     return (
         // Give the cell same background color (but not transparent) to only keep the borders
-        <button ref={ref} {...rest} className={`${className ?? ""} bg-zinc-900 hover:bg-zinc-800 border-black/20 rounded-lg`}>
+        <button ref={ref} {...rest} className={`${className ?? ""} bg-zinc-900 hover:bg-zinc-800 border-black/20 rounded-none`}>
             {children}
         </button>
     );
@@ -221,7 +220,9 @@ const Cell = forwardRef<HTMLButtonElement, ComponentProps<"button">>(function Ce
 function TextChat() {
     return (
         <div className="h-72 w-full flex flex-col gap-2 bg-zinc-900">
+            {/* Text container with scrollbar */}
             <div className="w-full h-full bg-black overflow-y-scroll"></div>
+            {/* Input + Send button */}
             <div className="w-full flex flex-row gap-2">
                 <input className="w-full p-2 bg-black rounded-md" placeholder="Enter message"></input>
                 <button className="btn">Send</button>
