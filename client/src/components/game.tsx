@@ -12,9 +12,15 @@ type GameInfoProps = {
     moves: number;
 };
 
-export default function Game({ username, roomId, player }: { username: string; roomId: string; player: "X" | "O" }) {
+export default function Game({ setRoomJoined }: { setRoomJoined: React.Dispatch<React.SetStateAction<boolean>> }) {
     const { socket, connected } = useSocket();
-    const [opponentUsername, setOpponentUsername] = useState("");
+    const [roomInfo, setRoomInfo] = useState({
+        roomId: "",
+        selfUsername: "",
+        selfPlayerType: "",
+        opponentUsername: "",
+    });
+    // const [opponentUsername, setOpponentUsername] = useState("");
     const [gameInfo, setGameInfo] = useState<GameInfoProps | null>(null);
 
     const handleGameStart = (data: GameInfoProps) => {
@@ -24,18 +30,17 @@ export default function Game({ username, roomId, player }: { username: string; r
     };
 
     const handleInvalidMove = () => {
-        console.log("Invalid move");
+        alert("Invalid move");
     };
 
     const handleGameInfo = (data: GameInfoProps) => {
-        console.log("Game info");
         console.log(data);
         setGameInfo(data);
     };
 
     const makeMove = (row: number, col: number) => {
         console.log("Making move");
-        socket.emit("make-move", roomId, row, col, function (callback: { status: string; message: string }) {
+        socket.emit("make-move", roomInfo.roomId, row, col, function (callback: { status: string; message: string }) {
             if (callback.status === "failure") {
                 alert(callback.message);
                 return;
@@ -44,23 +49,55 @@ export default function Game({ username, roomId, player }: { username: string; r
     };
 
     const requestRematch = () => {
-        socket.emit("rematch-request", roomId, function (callback: string) {
+        socket.emit("rematch-request", roomInfo.roomId, function (callback: string) {
             console.log(callback);
         });
     };
 
+    // When you're the first player to join
     const handleGetOpponentUsername = (data: string) => {
-        setOpponentUsername(data);
         // Share your username with opponent
-        socket.emit("client-share-username", roomId, username);
+        setRoomInfo((prev) => {
+            // State values are unaccessible outside the state setter function in handleGetOpponentUsername,
+            // so we call emit function here (where we have access to state values)
+            socket.emit("client-share-username", prev.roomId, prev.selfUsername);
+
+            return {
+                ...prev,
+                opponentUsername: data,
+            };
+        });
     };
 
+    // When you're the second player to join
     const handleGetOpponentUsernameFinal = (data: string) => {
-        setOpponentUsername(data);
+        console.log("Getting opponent username final: " + data);
+        setRoomInfo((prev) => {
+            return {
+                ...prev,
+                opponentUsername: data,
+            };
+        });
     };
 
+    // Set up all game event listeners
     useEffect(() => {
         if (!connected) return;
+
+        // Either server-share-username can happen first or get-self-information, so we should allow for both without overwriting
+        socket.emit(
+            "get-self-information",
+            function (callback: { selfUsername: string; roomId: string; selfPlayerType: "X" | "O" }) {
+                console.log(callback);
+                console.log("Setting state");
+                setRoomInfo((prev) => ({
+                    ...prev,
+                    roomId: callback.roomId,
+                    selfUsername: callback.selfUsername,
+                    selfPlayerType: callback.selfPlayerType,
+                }));
+            }
+        );
 
         // Different from "start-game" emitted by client
         socket.on("game-start", handleGameStart);
@@ -69,6 +106,7 @@ export default function Game({ username, roomId, player }: { username: string; r
         // When second player joins, server will send the username of the first player
         socket.on("server-share-username", handleGetOpponentUsername);
         socket.on("server-share-username-final", handleGetOpponentUsernameFinal);
+        socket.on("player-disconnected", handlePlayerDisconnect);
 
         return () => {
             socket.off("game-start", handleGameStart);
@@ -76,23 +114,36 @@ export default function Game({ username, roomId, player }: { username: string; r
             socket.off("invalid-move", handleInvalidMove);
             socket.off("server-share-username", handleGetOpponentUsername);
             socket.off("server-share-username-final", handleGetOpponentUsernameFinal);
+            socket.off("player-disconnected", handlePlayerDisconnect);
         };
     }, []);
+
+    // Debug
+    useEffect(() => {
+        console.log("Room info: " + JSON.stringify(roomInfo));
+    }, [roomInfo]);
+
+    const handlePlayerDisconnect = () => {
+        alert("Opponent disconnected");
+        setRoomJoined(false);
+    };
 
     return (
         <div className="border-2 border-blue-500/50">
             <div className="flex flex-col">
-                <p className="font-semibold">{username}</p>
-                <p className="text-sm opacity-75">{roomId}</p>
+                <p className="font-semibold">{roomInfo.selfUsername}</p>
+                <p className="text-sm opacity-75">{roomInfo.roomId}</p>
                 <p className="text-xs opacity-50">
-                    {gameInfo ? `Playing against ${opponentUsername} (${player === "X" ? "O" : "X"})` : "Waiting for a player..."}
+                    {roomInfo.opponentUsername
+                        ? `Playing against ${roomInfo.opponentUsername} (${roomInfo.selfPlayerType === "X" ? "O" : "X"})`
+                        : "Waiting for a player..."}
                 </p>
             </div>
             <p className="font-bold text-2xl text-center">GAME</p>
             {/* Board + Text chat container */}
             {gameInfo && (
                 <div className="relative flex lg:flex-row flex-col gap-2">
-                    <Board gameInfo={gameInfo} player={player}>
+                    <Board gameInfo={gameInfo} player={roomInfo.selfPlayerType}>
                         {gameInfo.board.map((row, rowIndex) => {
                             return row.map((cell, colIndex) => {
                                 return (
@@ -114,7 +165,7 @@ export default function Game({ username, roomId, player }: { username: string; r
 }
 
 // Wrapper function to align all cells in a row
-function Board({ children, gameInfo, player }: { children: React.ReactNode; gameInfo?: GameInfoProps; player: "X" | "O" }) {
+function Board({ children, gameInfo, player }: { children: React.ReactNode; gameInfo?: GameInfoProps; player: string }) {
     // Take up the full size of the parent
     return (
         // Container Positioner

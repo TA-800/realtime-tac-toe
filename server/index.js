@@ -75,12 +75,53 @@ io.on("connection", (socket) => {
         console.log(socket.id + " disconnected.");
     });
 
+    socket.on("disconnecting", () => {
+        console.log("Rooms before disconnecting: " + [...socket.rooms]);
+
+        if (socket.rooms.size > 1) {
+            const gameRoom = [...socket.rooms][1];
+
+            // Tell other player (if there is one) that this player has disconnected
+            io.to(gameRoom).emit("player-disconnected");
+            // Remove room from available rooms
+            availableRooms.delete(gameRoom);
+            // Remove room from game instances
+            gameInstances.delete(gameRoom);
+            // Remove room from rematch requests
+            rematchRequests.delete(gameRoom);
+            // Get the socket ids of the remaining players in the the room and remove them from the room (there should be only 1 remaining player)
+            const remainingPlayers = [...io.sockets.adapter.rooms.get(gameRoom)];
+            remainingPlayers.forEach((player) => {
+                io.sockets.sockets.get(player).leave(gameRoom);
+                console.log("Player " + player + " left room " + gameRoom);
+            });
+        }
+    });
+
     socket.on("search-for-room", (callback) => {
         // Return all available rooms
         callback([...availableRooms]);
     });
 
     socket.on("attempt-join-room", (roomId, providedUsername, callback) => {
+        // A player should not be able to join a room if they are already joined one before
+        if (socket.rooms.size > 2) {
+            callback({
+                status: "failure",
+                message: "You are already in a room.",
+            });
+            return;
+        }
+        // Though the above should never happen because of frontend logic, this is just a precaution
+
+        if (!roomId) {
+            callback({
+                status: "failure",
+                message: "Please enter room ID.",
+            });
+            return;
+        }
+
         username = providedUsername;
 
         // Check if room already has two members
@@ -120,6 +161,16 @@ io.on("connection", (socket) => {
                 message: `${roomId} is full.`,
             });
         }
+    });
+
+    socket.on("get-self-information", (callback) => {
+        callback({
+            // First room of every socket is always the socket's own room (= socket.id)
+            // Second room is the game room that they've joined
+            roomId: [...socket.rooms][1],
+            selfUsername: username,
+            selfPlayerType: player === 1 ? "X" : "O",
+        });
     });
 
     socket.on("start-game", (roomId) => {
@@ -169,6 +220,14 @@ io.on("connection", (socket) => {
             startGame(roomId);
         }
     });
+});
+
+// Clear all rooms and game instances
+app.get("/clear", (req, res) => {
+    availableRooms.clear();
+    gameInstances.clear();
+    rematchRequests.clear();
+    res.send("Cleared.");
 });
 
 server.listen(3000, () => {

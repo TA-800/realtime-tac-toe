@@ -1,13 +1,11 @@
 import Game from "../components/game";
 import useSocket from "../components/useSocketHook";
-import { createRef, useState } from "react";
+import { createRef, useEffect, useState } from "react";
 
 export default function GamePage() {
     const { socket, connected } = useSocket();
     const [availableRooms, setAvailableRooms] = useState<string[]>([]);
-    const [roomJoined, setRoomJoined] = useState<string>("");
-    const [username, setUsername] = useState<string>("");
-    const [playerNumber, setPlayerNumber] = useState<number | null>(null);
+    const [roomJoined, setRoomJoined] = useState<boolean>(false);
     const inputRef = createRef<HTMLInputElement>();
     const usernameRef = createRef<HTMLInputElement>();
 
@@ -31,9 +29,7 @@ export default function GamePage() {
             function (callback: { status: string; player: number; message: string }) {
                 console.log(callback);
                 if (callback.status === "success") {
-                    setUsername(providedUsername);
-                    setRoomJoined(roomName);
-                    setPlayerNumber(callback.player);
+                    setRoomJoined(true);
                     if (callback.player === 2) {
                         // If player joined has number 2, that means two players have joined the room and we can start the game
                         socket.emit("start-game", roomName); // different from "game-start" emitted by server
@@ -49,6 +45,10 @@ export default function GamePage() {
         );
     };
 
+    useEffect(() => {
+        // Check if we had already joined room before
+    }, []);
+
     if (!connected) {
         return <div>Connecting...</div>;
     }
@@ -58,7 +58,7 @@ export default function GamePage() {
             {/* Your socket id is: {socket.id} */}
             {roomJoined && (
                 <div>
-                    <Game username={username} roomId={roomJoined} player={playerNumber === 1 ? "X" : "O"} />
+                    <Game setRoomJoined={setRoomJoined} />
                 </div>
             )}
             {!roomJoined && (
