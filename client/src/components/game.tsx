@@ -22,6 +22,7 @@ type RoomInfoProps = {
 export default function Game() {
     const { socket, connected } = useSocket();
     const [moveMadeResponse, setMoveMadeResponse] = useState("");
+    const [rematchRequester, setRematchRequester] = useState("");
     const [gameInfo, setGameInfo] = useState<GameInfoProps>({
         board: [
             [null, null, null],
@@ -51,7 +52,8 @@ export default function Game() {
     };
 
     const handleGameStart = (gameState: GameInfoProps) => {
-        console.log("Game started server side");
+        setMoveMadeResponse("");
+        setRematchRequester("");
         setGameInfo(gameState);
     };
 
@@ -59,6 +61,14 @@ export default function Game() {
         console.log("Move was made");
         console.log(gameState ?? "Nothing");
         setGameInfo(gameState);
+    };
+
+    const requestRematch = () => {
+        socket.emit("request rematch", roomInfo.roomName, roomInfo.self);
+    };
+
+    const handleRematchRequest = (requesterUsername: string) => {
+        setRematchRequester(requesterUsername);
     };
 
     // Get information about room state whenever component is mounted + set up socket listeners
@@ -74,11 +84,13 @@ export default function Game() {
         socket.on("player joined", handleNewJoin);
         socket.on("game start", handleGameStart);
         socket.on("made move", handleMoveMade);
+        socket.on("rematch request", handleRematchRequest);
 
         return () => {
             socket.off("player joined", handleNewJoin);
             socket.off("game start", handleGameStart);
             socket.off("made move", handleMoveMade);
+            socket.off("rematch request", handleRematchRequest);
         };
     }, []);
 
@@ -121,7 +133,12 @@ export default function Game() {
             {/* Board + Text chat container */}
             {gameInfo && (
                 <div className="relative flex lg:flex-row flex-col gap-2">
-                    <Board selfSymbol={roomInfo.selfSymbol} gameInfo={gameInfo} moveMadeResponse={moveMadeResponse}>
+                    <Board
+                        rematchRequester={rematchRequester}
+                        requestRematch={requestRematch}
+                        selfSymbol={roomInfo.selfSymbol}
+                        gameInfo={gameInfo}
+                        moveMadeResponse={moveMadeResponse}>
                         {gameInfo.board.map((row, rowIndex) => {
                             return row.map((cell, colIndex) => {
                                 return (
@@ -145,11 +162,15 @@ function Board({
     selfSymbol,
     moveMadeResponse,
     gameInfo,
+    requestRematch,
+    rematchRequester,
 }: {
     children: React.ReactNode;
     selfSymbol: "X" | "O";
     moveMadeResponse: string;
     gameInfo: GameInfoProps;
+    requestRematch: () => void;
+    rematchRequester: string;
 }) {
     // Take up the full size of the parent
     return (
@@ -167,9 +188,19 @@ function Board({
                 <span>Moves Made: {gameInfo.moves}</span>
                 {moveMadeResponse && <span>{moveMadeResponse}</span>}
             </div>
+            {/* Game over screen */}
             {(gameInfo.winner !== null || gameInfo.moves === 9) && (
-                <div className="absolute top-0 left-0 w-full h-full bg-zinc-900/80 flex justify-center items-center">
-                    <span className="font-semibold">GAME OVER</span>
+                <div className="absolute top-0 left-0 w-full h-full bg-zinc-900/80 flex flex-col justify-center items-center">
+                    <span className="text-5xl font-black mt-auto">{gameInfo.winner ? `${gameInfo.winner} wins!` : "Draw."}</span>
+                    <button
+                        onClick={(e) => {
+                            e.currentTarget.disabled = true;
+                            requestRematch();
+                        }}
+                        className="btn mt-auto">
+                        Rematch
+                    </button>
+                    {rematchRequester && <p className="text-xs opacity-50">{rematchRequester} is requesting rematch.</p>}
                 </div>
             )}
         </div>

@@ -1,14 +1,12 @@
 import Game from "../components/game";
 import useSocket from "../components/useSocketHook";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 export default function GamePage() {
     const { socket, connected } = useSocket();
     const [username, setUsername] = useState("");
     const [gameRooms, setGameRooms] = useState<string[]>([]); // ["Sekiro", "Dark Souls", "Bloodborne"]
     const [roomName, setRoomName] = useState("");
-    const roomNameInputRef = useRef<HTMLInputElement>();
-    const [roomJoinedSuccessfully, setRoomJoinedSuccessfully] = useState(false);
     const [roomJoinError, setRoomJoinError] = useState("");
 
     const onUsernameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -56,6 +54,12 @@ export default function GamePage() {
 
     useEffect(() => {
         socket.on("connect_error", handleConnectError);
+
+        // Check if we have already connected before
+        socket.emit("check joined room", (roomNameCallback: string) => {
+            // Callback will be a roomName string
+            setRoomName(roomNameCallback);
+        });
 
         return () => {
             socket.off("connect_error", handleConnectError);
@@ -108,11 +112,7 @@ export default function GamePage() {
                     </div>
                 </div>
             )}
-            {connected && roomName && (
-                <>
-                    <Game />
-                </>
-            )}
+            {connected && roomName && <Game />}
         </div>
     );
 }

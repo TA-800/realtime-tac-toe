@@ -30,6 +30,8 @@ const io = new Server(server, {
 let availableRooms = [];
 // Map of room names to TicTacToe instances
 let gameInstances = new Map();
+// Map of room names to rematch requests
+let rematchRequests = [];
 
 /* Initiate and detect events & connections on the socket.io server. 
 Regular HTTP requests won't work because socket.io connections operate differently,
@@ -100,10 +102,20 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on("check joined room", (callback) => {
+        let roomName = [...socket.rooms][1];
+        callback(roomName ?? "");
+    });
+
     // Get information about joined room (roomName, selfUsername + symbol, opponentUsername)
     socket.on("get room info", async (callback) => {
         // Get the joined room name
         let roomName = [...socket.rooms][1];
+
+        if (!roomName) {
+            callback(null);
+            return;
+        }
 
         // Get username and player symbol
         let self = socket.data.username;
@@ -186,12 +198,28 @@ io.on("connection", (socket) => {
             io.in(roomName).emit("made move", gameInstance.getGameState());
         }
     });
+
+    socket.on("request rematch", (roomName, requesterUsername) => {
+        if (rematchRequests.includes(roomName)) {
+            // Remove that room from rematchRequests array
+            rematchRequests = rematchRequests.filter((room) => room !== roomName);
+            // Begin rematch
+            let gameInstance = gameInstances.get(roomName);
+            gameInstance.reset();
+            // Notify players
+            io.to(roomName).emit("game start", gameInstance.getGameState());
+        } else {
+            rematchRequests.push(roomName);
+            io.to(roomName).emit("rematch request", requesterUsername);
+        }
+    });
 });
 
 // Clear all rooms and game instances
 app.get("/clear", (req, res) => {
     availableRooms = [];
     gameInstances = new Map();
+    rematchRequests = [];
     res.send("Cleared.");
 });
 
