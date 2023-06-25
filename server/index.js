@@ -228,6 +228,14 @@ io.on("connection", (socket) => {
             io.to(roomName).emit("rematch request", requesterUsername);
         }
     });
+
+    socket.on("send message", (content) => {
+        // Get room
+        let roomName = [...socket.rooms][1];
+        let username = socket.data.username;
+
+        io.to(roomName).emit("receive msg", { content: content, username: username });
+    });
 });
 
 // Clear all rooms and game instances

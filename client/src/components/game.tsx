@@ -1,3 +1,4 @@
+import TextChat from "./text";
 import useSocket from "./useSocketHook";
 import { ComponentProps, forwardRef, useEffect, useState } from "react";
 
@@ -248,17 +249,3 @@ const Cell = forwardRef<HTMLButtonElement, ComponentProps<"button">>(function Ce
         </button>
     );
 });
-
-function TextChat() {
-    return (
-        <div className="h-72 w-full flex flex-col gap-2 bg-zinc-900">
-            {/* Text container with scrollbar */}
-            <div className="w-full h-full bg-black overflow-y-scroll"></div>
-            {/* Input + Send button */}
-            <div className="w-full flex flex-row gap-2">
-                <input className="w-full p-2 bg-black rounded-md" placeholder="Enter message"></input>
-                <button className="btn">Send</button>
-            </div>
-        </div>
-    );
-}
