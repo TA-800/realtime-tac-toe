@@ -129,28 +129,32 @@ export default function Game() {
                         : "Waiting for Player 2..."}
                 </p>
             </div>
-            <p className="font-bold text-2xl text-center">GAME</p>
             {/* Board + Text chat container */}
-            {gameInfo && (
-                <div className="relative flex lg:flex-row flex-col gap-2">
-                    <Board
-                        rematchRequester={rematchRequester}
-                        requestRematch={requestRematch}
-                        selfSymbol={roomInfo.selfSymbol}
-                        gameInfo={gameInfo}
-                        moveMadeResponse={moveMadeResponse}>
-                        {gameInfo.board.map((row, rowIndex) => {
-                            return row.map((cell, colIndex) => {
-                                return (
-                                    <Cell onClick={() => makeMove(rowIndex, colIndex)} key={rowIndex + colIndex + (cell ?? "")}>
-                                        {cell}
-                                    </Cell>
-                                );
-                            });
-                        })}
-                    </Board>
-                    <TextChat />
-                </div>
+            {roomInfo.opponent && (
+                <>
+                    <p className="font-bold text-2xl text-center">GAME</p>
+                    <div className="relative flex lg:flex-row flex-col gap-2">
+                        <Board
+                            rematchRequester={rematchRequester}
+                            requestRematch={requestRematch}
+                            selfSymbol={roomInfo.selfSymbol}
+                            gameInfo={gameInfo}
+                            moveMadeResponse={moveMadeResponse}>
+                            {gameInfo.board.map((row, rowIndex) => {
+                                return row.map((cell, colIndex) => {
+                                    return (
+                                        <Cell
+                                            onClick={() => makeMove(rowIndex, colIndex)}
+                                            key={rowIndex + colIndex + (cell ?? "")}>
+                                            {cell}
+                                        </Cell>
+                                    );
+                                });
+                            })}
+                        </Board>
+                        <TextChat />
+                    </div>
+                </>
             )}
         </div>
     );

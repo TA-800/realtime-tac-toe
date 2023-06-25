@@ -5,9 +5,10 @@ import { useState, useEffect } from "react";
 export default function GamePage() {
     const { socket, connected } = useSocket();
     const [username, setUsername] = useState("");
-    const [gameRooms, setGameRooms] = useState<string[]>([]); // ["Sekiro", "Dark Souls", "Bloodborne"]
+    const [gameRooms, setGameRooms] = useState<string[]>([]);
     const [roomName, setRoomName] = useState("");
     const [roomJoinError, setRoomJoinError] = useState("");
+    const [loading, setLoading] = useState(true);
 
     const onUsernameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -59,6 +60,7 @@ export default function GamePage() {
         socket.emit("check joined room", (roomNameCallback: string) => {
             // Callback will be a roomName string
             setRoomName(roomNameCallback);
+            setLoading(false);
         });
 
         return () => {
@@ -79,7 +81,8 @@ export default function GamePage() {
                     </form>
                 </div>
             )}
-            {connected && !roomName && (
+            {connected && loading && <div>Loading room information...</div>}
+            {connected && !roomName && !loading && (
                 <div className="space-y-4">
                     <span>Playing as {username}</span>
                     <hr className="hr" />
