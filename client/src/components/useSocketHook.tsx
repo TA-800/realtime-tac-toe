@@ -14,22 +14,19 @@ export default function useSocket() {
     };
 
     useEffect(() => {
-        // console.log("UseEffect from useSocketHook.tsx");
-
-        if (!socket.connected) {
-            // console.log("Connecting to socket...");
-            socket.connect();
-        }
-
         socket.on("connect", onConnect);
         socket.on("disconnect", onDisconnect);
 
+        socket.onAny((event, ...args) => {
+            // Fancy logging
+            console.log(`%cEvent: ${event}, Args: ${args}`, "color: #00ff00");
+        });
+
         return () => {
-            // console.log("Cleaning up...");
             socket.off("connect", onConnect);
             socket.off("disconnect", onDisconnect);
         };
-    }, [socket]);
+    }, []);
 
     return { socket, connected };
 }

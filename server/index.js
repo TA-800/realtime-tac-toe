@@ -27,30 +27,9 @@ const io = new Server(server, {
     },
 });
 
-// Set up a Set to store available rooms
-const availableRooms = new Set();
-// Set up a Map to store game instances (room -> game instance)
-const gameInstances = new Map();
-// Set up a Map to store rematch requests (room -> number of rematch requests)
-const rematchRequests = new Map();
-
-// Send game information to both players in a given room
-function emitGameInfo(roomId, gameInstance) {
-    if (!gameInstance) gameInstance = gameInstances.get(roomId);
-    io.to(roomId).emit("game-info", gameInstance.getGameInformation());
-}
-
-// Start game for a given room
-function startGame(roomId) {
-    if (!gameInstances.has(roomId)) {
-        gameInstances.set(roomId, new TicTacToe());
-    }
-
-    const gameInstance = gameInstances.get(roomId);
-    gameInstance.reset();
-
-    io.to(roomId).emit("game-info", gameInstance.getGameInformation());
-}
+let availableRooms = [];
+// Map of room names to TicTacToe instances
+let gameInstances = new Map();
 
 /* Initiate and detect events & connections on the socket.io server. 
 Regular HTTP requests won't work because socket.io connections operate differently,
@@ -60,186 +39,159 @@ io.on("connection", (socket) => {
     Each time a client connects to the server, a new socket object is created to represent that connection.
     Each socket object can be thought of as a representation of a user or a client that is connected to the server. */
 
-    console.log(socket.id + " connected.");
-    let username = "";
-    let player = null;
+    socket.data.username = socket.handshake.auth.username;
+    console.log(`${socket.data.username} (${socket.id}) connected.`);
 
     /* The events being listened for are emitted by the client whose socket is in the socket parameter.
     There is no reason to check if the events are being emitted by the client of the socket parameter
     or by another client somewhere else globally. */
 
     socket.on("disconnect", () => {
-        console.log(socket.id + " disconnected.");
+        console.log(`${socket.data.username} (${socket.id}) disconnected.`);
     });
 
-    socket.on("disconnecting", () => {
-        // If the player was in a room
-        if (socket.rooms.size > 1) {
-            // First room of every socket is always the socket's own room (= socket.id)
-            // Second room is the game room that they've joined
-            const gameRoom = [...socket.rooms][1];
+    socket.on("get room usernames", async (roomName) => {
+        // Get all usernames in a room
+        const usersOfRoom = await io.in(roomName).fetchSockets();
 
-            // Tell other player (if there is one) that this player has disconnected
-            io.to(gameRoom).emit("player-disconnected");
-            // Remove room from available rooms
-            availableRooms.delete(gameRoom);
-            // Remove room from game instances
-            gameInstances.delete(gameRoom);
-            // Remove room from rematch requests
-            rematchRequests.delete(gameRoom);
-            // Get the socket ids of the remaining players in the the room and remove them from the room
-            const remainingPlayers = [...io.sockets.adapter.rooms.get(gameRoom)];
-            remainingPlayers.forEach((player) => {
-                // There should be only 1 remaining player)
-                io.sockets.sockets.get(player).leave(gameRoom);
-            });
-        }
-    });
-
-    socket.on("search-for-room", (callback) => {
-        // Return all available rooms
-        callback([...availableRooms]);
-    });
-
-    socket.on("attempt-join-room", (roomId, providedUsername, callback) => {
-        // A player should not be able to join a room if they are already joined one before
-        if (socket.rooms.size > 2) {
-            callback({
-                status: "failure",
-                message: "You are already in a room.",
-            });
-            return;
-        }
-        // Though the above should never happen because of frontend logic, this is just a precaution
-
-        if (!roomId) {
-            callback({
-                status: "failure",
-                message: "Please enter room ID.",
-            });
-            return;
-        }
-        if (!providedUsername) {
-            callback({
-                status: "failure",
-                message: "Please enter username.",
-            });
-        }
-
-        username = providedUsername;
-
-        // Check if room already has two members
-        const room = io.sockets.adapter.rooms.get(roomId);
-        // rooms.get(roomId) will return array of socket ids in that room
-        // If there was no one in the room
-        if (!room || room.size == 0) {
-            player = 1;
-            socket.join(roomId);
-            availableRooms.add(roomId);
-            callback({
-                status: "success",
-                player: player,
-                message: `${username} joined ${roomId}.`,
-            });
-        }
-        // If there was one person in the room
-        else if (room.size == 1) {
-            player = 2;
-            socket.join(roomId);
-            availableRooms.delete(roomId);
-            callback({
-                status: "success",
-                // Player 2 is always the second player to join and the callback will emit start-game event
-                player: player,
-                message: `${username} joined ${roomId}.`,
-            });
-        }
-        // If there were already two people in the room (this could happen when custom roomId is typed in to enter)
-        else {
-            player = null;
-            callback({
-                status: "failure",
-                player: player,
-                message: `${roomId} is full.`,
-            });
-        }
-    });
-
-    socket.on("get-self-information", (callback) => {
         callback({
-            // Remember that first room in socket.rooms is the socket id of the socket itself
-            roomId: [...socket.rooms][1] || null,
-            selfUsername: username,
-            selfPlayerType: player === 1 ? "X" : "O",
+            usernames: usersOfRoom.map((socket) => socket.data.username),
         });
     });
 
-    socket.on("start-game", (roomId) => startGame(roomId));
-
-    socket.on("username-chain-start", (roomId, providedUsername) => {
-        // Get all the socket ids in the room with id roomId
-        const room = io.sockets.adapter.rooms.get(roomId);
-        // If there is only one person in the room, don't do anything
-        if (room.size === 1) return;
-
-        // Emit first player's username to second player
-        socket.broadcast.to(roomId).emit("username-chain-server", providedUsername);
-    });
-    socket.on("username-chain-second-client", (roomId, providedUsername) => {
-        socket.broadcast.to(roomId).emit("username-chain-final", providedUsername);
-    });
-
-    socket.on("make-move", (roomId, row, col, callback) => {
-        const gameInstance = gameInstances.get(roomId);
-
-        // When make-move is used as a way to just retrieve information but not actually make any moves
-        if (row === -1 && col === -1) {
-            callback(gameInstance.getGameInformation());
+    socket.on("join room", async (roomName, callback) => {
+        if (!roomName) {
+            callback({ status: "failure", playerSymbol: null, message: "Room name is required." });
             return;
         }
 
-        // First, check if current player is the one making the move
-        if (gameInstance.getCurrentPlayerAsNumber() !== player) {
-            callback({
-                status: "failure",
-                message: "It is not your turn.",
-            });
+        // Do not let user join more than 1 (technically 2) rooms
+        if (socket.rooms.size > 2) {
+            // First room is always the socket's own room identified by its socket id
+            callback({ status: "failure", playerSymbol: null, message: "Already in a room." });
             return;
         }
 
-        const moveResult = gameInstance.makeMove(row, col);
+        // Add room to available rooms if it doesn't exist
+        if (!availableRooms.includes(roomName)) availableRooms.push(roomName);
 
-        // 0 -> no move was made (invalid move), 1 -> move was made, 2 -> move made and game is over with winner, 3 -> move made and game is over with draw
-        if (moveResult === 0) {
-            io.to(roomId).emit("invalid-move");
+        // Get the number of users in the room
+        const usersOfRoom = await io.in(roomName).fetchSockets();
+        const length = usersOfRoom.length;
+
+        if (length >= 2) {
+            callback({ status: "failure", playerSymbol: null, message: "Room is full." });
+            return;
         }
+
+        // Join the room
+        socket.join(roomName);
+        // Every time a player joins a room, assign them a symbol
+        let playerSymbol = length === 0 ? "X" : "O";
+        socket.data.playerSymbol = playerSymbol;
+
+        // Notify the other player in the room (if there is one) that new player has joined
+        socket.broadcast.to(roomName).emit("player joined", socket.data.username);
+
         callback({
             status: "success",
-            message: "Move made.",
+            playerSymbol,
+            message: "Joined room.",
         });
-        emitGameInfo(roomId, gameInstance);
     });
 
-    socket.on("rematch-request", (roomId) => {
-        // TODO: Ignore rematch requests from game which haven't ended
+    // Get information about joined room (roomName, selfUsername + symbol, opponentUsername)
+    socket.on("get room info", async (callback) => {
+        // Get the joined room name
+        let roomName = [...socket.rooms][1];
 
-        // Update rematchRequests map (roomId -> number of requests)
-        if (!rematchRequests.has(roomId)) rematchRequests.set(roomId, 1);
-        else rematchRequests.set(roomId, rematchRequests.get(roomId) + 1);
+        // Get username and player symbol
+        let self = socket.data.username;
+        let selfSymbol = socket.data.playerSymbol;
+        // Get opponent username
+        let opponent = "";
+        let roomSockets = await io.in(roomName).fetchSockets();
 
-        // If both players have requested a rematch, start a new game
-        if (rematchRequests.get(roomId) === 2) {
-            rematchRequests.delete(roomId);
-            startGame(roomId);
+        // If there is more than 1 socket in the room, get the opponent's username
+        if (roomSockets.length > 1) opponent = roomSockets.filter((roomSocket) => socket.id !== roomSocket.id)[0].data.username;
+
+        callback({
+            roomName,
+            self,
+            selfSymbol,
+            opponent,
+        });
+    });
+
+    // Get information about game in joined room (getGameState)
+    socket.on("get game info", (roomName, callback) => {
+        // Get game instance of room
+        let gameInstance = gameInstances.get(roomName);
+        callback({
+            // If game instance does not exist for the room then send null
+            gameState: gameInstance ? gameInstance.getGameState() : null,
+        });
+    });
+
+    // List of joinable rooms (filtered out games that have >= 2 users)
+    socket.on("get game rooms", async (callback) => {
+        const joinableRoomsPromises = availableRooms.map(async (roomName) => {
+            const usersOfRoom = await io.in(roomName).fetchSockets();
+            return { roomName, userCount: usersOfRoom.length };
+        });
+
+        const joinableRooms = await Promise.all(joinableRoomsPromises);
+
+        const filteredRooms = joinableRooms.filter((room) => room.userCount < 2);
+
+        const joinableRoomNames = filteredRooms.map((room) => room.roomName);
+
+        callback(joinableRoomNames);
+    });
+
+    socket.on("start game", (roomName, callback) => {
+        // If game instance already exists then do not create a new one
+        let gameInstance = gameInstances.get(roomName);
+        if (gameInstance) {
+            callback(`game has already started for ${roomName}`);
+            return;
+        }
+
+        // Create a new game instance
+        gameInstance = new TicTacToe();
+        gameInstances.set(roomName, gameInstance);
+
+        io.in(roomName).emit("game start", gameInstance.getGameState());
+
+        callback(`game started for ${roomName}`);
+    });
+
+    socket.on("make move", (roomName, row, col, callback) => {
+        if (!roomName) {
+            callback("no room name provided");
+            return;
+        }
+
+        // Get game instance and call makeMove with row & col on it as parameters
+        let gameInstance = gameInstances.get(roomName);
+
+        let result = gameInstance.makeMove(socket.data.playerSymbol, row, col);
+
+        if (result <= 1) {
+            callback(result === 0 ? "Not your turn" : "Invalid Move");
+            return;
+        }
+        if (result > 1) {
+            callback("move made successfully");
+            io.in(roomName).emit("made move", gameInstance.getGameState());
         }
     });
 });
 
 // Clear all rooms and game instances
 app.get("/clear", (req, res) => {
-    availableRooms.clear();
-    gameInstances.clear();
-    rematchRequests.clear();
+    availableRooms = [];
+    gameInstances = new Map();
     res.send("Cleared.");
 });
 

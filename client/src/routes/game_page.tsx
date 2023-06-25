@@ -1,110 +1,118 @@
 import Game from "../components/game";
 import useSocket from "../components/useSocketHook";
-import { createRef, useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function GamePage() {
     const { socket, connected } = useSocket();
-    const [availableRooms, setAvailableRooms] = useState<string[]>([]);
-    const [roomJoined, setRoomJoined] = useState<boolean>(false);
-    const inputRef = createRef<HTMLInputElement>();
-    const usernameRef = createRef<HTMLInputElement>();
+    const [username, setUsername] = useState("");
+    const [gameRooms, setGameRooms] = useState<string[]>([]); // ["Sekiro", "Dark Souls", "Bloodborne"]
+    const [roomName, setRoomName] = useState("");
+    const roomNameInputRef = useRef<HTMLInputElement>();
+    const [roomJoinedSuccessfully, setRoomJoinedSuccessfully] = useState(false);
+    const [roomJoinError, setRoomJoinError] = useState("");
 
-    const searchRooms = () => {
-        socket.emit("search-for-room", function (callback: string[]) {
+    const onUsernameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const username = (event.target as HTMLFormElement).username.value;
+        setUsername(username);
+        socket.auth = { username };
+        socket.connect();
+    };
+
+    // Disconnect Error
+    const handleConnectError = (err: Error) => {
+        console.log(`%c${err}`, `color: #ff0000`);
+        setUsername("");
+    };
+
+    // List of joinable rooms on search
+    const handleSearchRooms = () => {
+        socket.emit("get game rooms", (callback: string[]) => {
             console.log(callback);
-            setAvailableRooms(callback);
+            setGameRooms(callback);
         });
     };
 
-    const joinRoom = (roomName: string, providedUsername: string) => {
-        if (providedUsername === "") {
-            alert("Please enter a username");
-            return;
-        }
-
-        socket.emit(
-            "attempt-join-room",
-            roomName,
-            providedUsername,
-            function (callback: { status: string; player: number; message: string }) {
-                console.log(callback);
-                if (callback.status === "success") {
-                    setRoomJoined(true);
-                    if (callback.player === 2) {
-                        // If player joined has number 2, that means two players have joined the room and we can start the game
-                        socket.emit("start-game", roomName); // different from "game-start" emitted by server
-                        /* This event needs to be emitted client-side because server (apparently) doesn't wait for player's join event to fully complete
-                        (which means server can emit start-game before player has fully successfully joined the room). */
-                    }
-                }
-                if (callback.status === "failure") {
-                    alert(callback.message);
-                    return;
-                }
+    // socket.emit ("join room" with roomName & callback) and error handling
+    const handleEmitRoomSearch = (roomName: string) => {
+        socket.emit("join room", roomName, (callback: { status: string; playerSymbol: "X" | "O" | null; message: string }) => {
+            console.log(callback);
+            if (callback.status === "failure") {
+                setRoomName("");
+                setRoomJoinError(callback.message);
+                return;
             }
-        );
+            setRoomJoinError("");
+            setRoomName(roomName);
+        });
+    };
+
+    // Attempt join room on button click
+    const handleRoomSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const roomName = (event.target as HTMLFormElement).roomName.value;
+        handleEmitRoomSearch(roomName);
     };
 
     useEffect(() => {
-        if (!connected) return;
+        socket.on("connect_error", handleConnectError);
 
-        socket.emit("get-self-information", function (callback: any) {
-            console.log(callback);
-            if (callback.roomId) {
-                setRoomJoined(true);
-            }
-        });
+        return () => {
+            socket.off("connect_error", handleConnectError);
+        };
     }, []);
 
-    if (!connected) {
-        return <div>Connecting...</div>;
-    }
-
     return (
-        <>
-            {/* Your socket id is: {socket.id} */}
-            {roomJoined && (
+        <div>
+            <span className="text-sm opacity-75">Server connection status: {connected ? "Connected." : "Not connected."}</span>
+            {!connected && (
                 <div>
-                    <Game setRoomJoined={setRoomJoined} />
+                    <form onSubmit={onUsernameSubmit} className="flex flex-col gap-1">
+                        <input className="input" type="text" name="username" id="username" placeholder="Username" />
+                        <button className="btn" type="submit">
+                            Connect
+                        </button>
+                    </form>
                 </div>
             )}
-            {!roomJoined && (
-                <div className="flex flex-col">
-                    <div className="flex flex-col gap-2 w-full">
-                        <input
-                            ref={usernameRef}
-                            placeholder="Username"
-                            className="bg-zinc-900 border-2 border-white/20 rounded-md px-4 py-2 "
-                        />
-                        <input
-                            ref={inputRef}
-                            placeholder="Room ID"
-                            className="bg-zinc-900 border-2 border-white/20 rounded-md px-4 py-2 "
-                        />
-                        <div className="flex flex-row justify-between">
-                            <button
-                                onClick={() => joinRoom(inputRef.current!.value, usernameRef.current!.value)}
-                                className="bg-blue-600 rounded-md px-4 py-2 ">
-                                Join room
-                            </button>
-                            <button onClick={() => searchRooms()} className="bg-blue-600 rounded-md px-4 py-2">
-                                Search rooms
+            {connected && !roomName && (
+                <div className="space-y-4">
+                    <span>Playing as {username}</span>
+                    <hr className="hr" />
+                    <form onSubmit={handleRoomSubmit} className="flex flex-col gap-1">
+                        <input className="input" type="text" name="roomName" id="roomName" placeholder="Room Name" required />
+                        {roomJoinError && (
+                            <div>
+                                <span className="text-red-500 text-sm opacity-75">{roomJoinError}</span>
+                            </div>
+                        )}
+                        <div className="flex flex-row gap-1">
+                            <button className="btn">Join Room</button>
+                            <button className="btn" type="button" onClick={handleSearchRooms}>
+                                Room Search
                             </button>
                         </div>
-                        {/* Available rooms */}
-                        <div className="bg-zinc-800 w-full h-64 overflow-y-scroll flex flex-col gap-1 rounded-md p-2">
-                            {availableRooms.map((room, i) => (
+                    </form>
+                    {/* List of rooms */}
+                    <div className="h-64 w-64 overflow-y-scroll bg-black flex flex-col gap-1 p-2">
+                        {gameRooms.map((roomName, index) => {
+                            return (
                                 <button
-                                    onClick={() => joinRoom(room, usernameRef.current!.value)}
-                                    className="flex bg-black/30 p-4 rounded-md hover:bg-black/25 hover:outline outline-1 outline-white/10"
-                                    key={i}>
-                                    {room}
+                                    onClick={() => handleEmitRoomSearch(roomName)}
+                                    key={index}
+                                    className="bg-slate-800 p-2 rounded hover:border-white/20 border-2 border-white/0 transition">
+                                    {roomName}
                                 </button>
-                            ))}
-                        </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
-        </>
+            {connected && roomName && (
+                <>
+                    <Game />
+                </>
+            )}
+        </div>
     );
 }

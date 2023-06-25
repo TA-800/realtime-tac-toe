@@ -4,10 +4,16 @@
 
 @layer components {
     .btn {
-        @apply bg-blue-600 px-4 py-2 w-fit rounded-md text-white font-semibold;
+        @apply bg-blue-600 text-white font-semibold px-4 py-2 rounded w-fit h-11;
     }
     .btn[disabled] {
-        @apply bg-gray-700 px-4 py-2 w-fit rounded-md text-white font-semibold;
+        @apply bg-gray-700 text-white font-semibold px-4 py-2 rounded w-fit h-11;
+    }
+    .input {
+        @apply bg-gray-700 text-white font-semibold px-4 py-2 rounded w-fit h-11;
+    }
+    .hr {
+        @apply opacity-25;
     }
 }
 

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-export default function Sidebar() {
+export default function Navbar() {
     return (
         <div className="flex justify-center w-full">
             <div className="bg-zinc-900 flex flex-row justify-center gap-4 p-2 w-fit h-fit rounded-md border-2 border-white/20">

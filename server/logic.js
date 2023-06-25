@@ -12,22 +12,24 @@ class TicTacToe {
         this.moves = 0;
     }
 
-    // Return 0 if no move was made, 1 if move was made, 2 if move was made and game is over, 3 if move was made and game is over with draw
-    makeMove(row, col) {
-        if (!this.isValidMove(row, col)) return 0;
+    // Return 0 if wrong player, 1 if invalid move, 2 if move was made, 3 if move was made & we have a winner, 4 if move was made it's a draw
+    makeMove(player, row, col) {
+        if (player !== this.currentPlayer) return 0;
+
+        if (!this.isValidMove(row, col)) return 1;
 
         if (this.board[row][col] == null) {
             this.board[row][col] = this.currentPlayer;
             this.moves++;
             if (this.checkWinner() === true) {
                 this.winner = this.currentPlayer;
-                return 2;
-            }
-            if (this.moves === 9) {
                 return 3;
             }
+            if (this.moves === 9) {
+                return 4;
+            }
             this.currentPlayer = this.currentPlayer == "X" ? "O" : "X";
-            return 1;
+            return 2;
         }
     }
 
@@ -83,18 +85,13 @@ class TicTacToe {
     }
 
     // Return game information like board (populated cells), current player, and winner in object form
-    getGameInformation() {
+    getGameState() {
         return {
             board: this.board,
             currentPlayer: this.currentPlayer,
             winner: this.winner,
             moves: this.moves,
         };
-    }
-
-    // X: 1, 0: 2
-    getCurrentPlayerAsNumber() {
-        return this.currentPlayer === "X" ? 1 : 2;
     }
 }
 
