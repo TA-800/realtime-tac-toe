@@ -115,7 +115,7 @@ export default function GamePage() {
                     </div>
                 </div>
             )}
-            {connected && roomName && <Game />}
+            {connected && roomName && <Game setRoomName={setRoomName} />}
         </div>
     );
 }

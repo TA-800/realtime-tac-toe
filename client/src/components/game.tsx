@@ -19,10 +19,11 @@ type RoomInfoProps = {
     opponent: string;
 };
 
-export default function Game() {
+export default function Game({ setRoomName }: { setRoomName: React.Dispatch<React.SetStateAction<string>> }) {
     const { socket, connected } = useSocket();
     const [moveMadeResponse, setMoveMadeResponse] = useState("");
     const [rematchRequester, setRematchRequester] = useState("");
+    const [playerLeft, setPlayerLeft] = useState(false);
     const [gameInfo, setGameInfo] = useState<GameInfoProps>({
         board: [
             [null, null, null],
@@ -41,7 +42,6 @@ export default function Game() {
     });
 
     const makeMove = (rowIndex: number, colIndex: number) => {
-        console.log(`Making move at ${rowIndex}, ${colIndex}`);
         socket.emit("make move", roomInfo.roomName, rowIndex, colIndex, (callback: string) => {
             setMoveMadeResponse(callback);
         });
@@ -58,8 +58,6 @@ export default function Game() {
     };
 
     const handleMoveMade = (gameState: GameInfoProps) => {
-        console.log("Move was made");
-        console.log(gameState ?? "Nothing");
         setGameInfo(gameState);
     };
 
@@ -71,13 +69,17 @@ export default function Game() {
         setRematchRequester(requesterUsername);
     };
 
+    // This will unmount the game component (when player leaves)
+    const handlePlayerLeft = () => {
+        setPlayerLeft(true);
+    };
+
     // Get information about room state whenever component is mounted + set up socket listeners
     useEffect(() => {
         if (!connected) return;
 
         // Get information about room
         socket.emit("get room info", (callback: RoomInfoProps) => {
-            console.log(callback);
             setRoomInfo(callback);
         });
 
@@ -85,12 +87,14 @@ export default function Game() {
         socket.on("game start", handleGameStart);
         socket.on("made move", handleMoveMade);
         socket.on("rematch request", handleRematchRequest);
+        socket.on("player left", handlePlayerLeft);
 
         return () => {
             socket.off("player joined", handleNewJoin);
             socket.off("game start", handleGameStart);
             socket.off("made move", handleMoveMade);
             socket.off("rematch request", handleRematchRequest);
+            socket.off("player left", handlePlayerLeft);
         };
     }, []);
 
@@ -99,15 +103,12 @@ export default function Game() {
         if (!roomInfo.roomName) return;
 
         socket.emit("get game info", roomInfo.roomName, (callback: { gameState: GameInfoProps | null }) => {
-            console.log(callback);
             if (!callback.gameState) {
                 if (!roomInfo.opponent) {
-                    console.log("No opponent so no game yet.");
                     return;
                 }
 
                 // If we have an opponent but no game, then a game must be started
-                console.log("Asking server to start game");
                 socket.emit("start game", roomInfo.roomName, (callback: string) => {
                     // on success: game started for ${roomName}
                     console.log(callback);
@@ -119,7 +120,7 @@ export default function Game() {
     }, [roomInfo]);
 
     return (
-        <div className="border-2 border-blue-500/50">
+        <div className="relative border-2 border-blue-500/50">
             <div className="flex flex-col">
                 <p className="font-semibold">{roomInfo.self ?? "Retreiving information..."}</p>
                 <p className="text-sm opacity-75">{roomInfo.roomName}</p>
@@ -156,6 +157,14 @@ export default function Game() {
                     </div>
                 </>
             )}
+            {playerLeft && (
+                <div className="absolute top-0 left-0 w-full h-full bg-zinc-900/80 flex flex-col justify-center items-center">
+                    <span>Player has disconnected</span>
+                    <button onClick={() => setRoomName("")} className="btn mt-1">
+                        Okay
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
@@ -186,11 +195,32 @@ function Board({
             </div>
             {/* Informational Board */}
             <div className="flex flex-col items-center justify-center gap-4 border-l-2 border-black bg-black/20">
-                <span>You are Player {selfSymbol}</span>
-                <span>Current Player: {gameInfo.currentPlayer}</span>
-                <span>Winner: {gameInfo.winner ?? "No one"}</span>
-                <span>Moves Made: {gameInfo.moves}</span>
-                {moveMadeResponse && <span>{moveMadeResponse}</span>}
+                <div className="grid grid-flow-row grid-cols-3 gap-y-1">
+                    <div className="col-span-2 sm:text-sm text-xs">
+                        <span className="opacity-75">You're Player</span>
+                    </div>
+                    <div>{selfSymbol}</div>
+                    <div className="col-span-2 sm:text-sm text-xs">
+                        <span className="opacity-75">Current Player</span>
+                    </div>
+                    <div>{gameInfo.currentPlayer}</div>
+                    <div className="col-span-2 sm:text-sm text-xs">
+                        <span className="opacity-75">Winner</span>
+                    </div>
+                    <div>{gameInfo.winner ?? "No one"}</div>
+                    <div className="col-span-2 sm:text-sm text-xs">
+                        <span className="opacity-75">Moves Made</span>
+                    </div>
+                    <div>{gameInfo.moves}</div>
+                </div>
+                {moveMadeResponse && (
+                    <span
+                        className={`${
+                            moveMadeResponse.includes("success") ? "text-green-600" : "text-red-600"
+                        } text-sm opacity-75`}>
+                        {moveMadeResponse}
+                    </span>
+                )}
             </div>
             {/* Game over screen */}
             {(gameInfo.winner !== null || gameInfo.moves === 9) && (

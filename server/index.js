@@ -52,6 +52,20 @@ io.on("connection", (socket) => {
         console.log(`${socket.data.username} (${socket.id}) disconnected.`);
     });
 
+    socket.on("disconnecting", () => {
+        let currentRoom = [...socket.rooms][1];
+        console.log("Before:", currentRoom);
+
+        // Make other player leave
+        io.to(currentRoom).emit("player left");
+        io.socketsLeave(currentRoom);
+
+        // Remove room from available rooms, gameInstances map and rematchRequests
+        availableRooms = availableRooms.filter((room) => room !== currentRoom);
+        gameInstances.delete(currentRoom);
+        rematchRequests = rematchRequests.filter((room) => room !== currentRoom);
+    });
+
     socket.on("get room usernames", async (roomName) => {
         // Get all usernames in a room
         const usersOfRoom = await io.in(roomName).fetchSockets();
@@ -75,7 +89,9 @@ io.on("connection", (socket) => {
         }
 
         // Add room to available rooms if it doesn't exist
-        if (!availableRooms.includes(roomName)) availableRooms.push(roomName);
+        if (!availableRooms.includes(roomName)) {
+            availableRooms.push(roomName);
+        }
 
         // Get the number of users in the room
         const usersOfRoom = await io.in(roomName).fetchSockets();
@@ -91,7 +107,6 @@ io.on("connection", (socket) => {
         // Every time a player joins a room, assign them a symbol
         let playerSymbol = length === 0 ? "X" : "O";
         socket.data.playerSymbol = playerSymbol;
-
         // Notify the other player in the room (if there is one) that new player has joined
         socket.broadcast.to(roomName).emit("player joined", socket.data.username);
 
