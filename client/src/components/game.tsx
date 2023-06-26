@@ -133,7 +133,7 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
                 <>
                     <div className="flex justify-center items-center mt-4 mb-1">
                         <div className="w-full h-0.5 bg-white/10 translate-y-0.5"></div>
-                        <p className="font-bold text-2xl text-center mx-2">GAME</p>
+                        <p className="font-bold text text-center mx-2">GAME</p>
                         <div className="w-full h-0.5 bg-white/10 translate-y-0.5"></div>
                     </div>
                     <div className="relative flex lg:flex-row flex-col gap-4">
@@ -145,10 +145,6 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
                             moveMadeResponse={moveMadeResponse}>
                             {gameInfo.board.map((row, rowIndex) => {
                                 return row.map((cell, colIndex) => {
-                                    // First cell = top left border should be rounded
-                                    // First row, last cell = top right border should be rounded
-                                    // Last row, first cell = bottom left border should be rounded
-                                    // Last cell = bottom right border should be rounded
                                     let roundedCorners = "";
                                     if (rowIndex === 0 && colIndex === 0) roundedCorners = "rounded-tl";
                                     else if (rowIndex === 0 && colIndex === 2) roundedCorners = "rounded-tr";
@@ -160,7 +156,7 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
                                             className={`${roundedCorners}`}
                                             onClick={() => makeMove(rowIndex, colIndex)}
                                             key={rowIndex + colIndex + (cell ?? "")}>
-                                            {cell}
+                                            <span>{cell}</span>
                                         </Cell>
                                     );
                                 });
@@ -203,7 +199,7 @@ function Board({
         // Container Positioner
         <div className="relative w-full h-full grid grid-cols-3 gap-1">
             {/* Actual Game TTT Board */}
-            <div className="bg-white/20 border-2 border-white/5 rounded w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
+            <div className="bg-white/20 border-2 border-white/5 w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1 rounded">
                 {children}
             </div>
             {/* Information Board */}

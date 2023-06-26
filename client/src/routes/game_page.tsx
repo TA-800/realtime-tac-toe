@@ -76,7 +76,11 @@ export default function GamePage() {
                     <form onSubmit={onUsernameSubmit} className="flex flex-col gap-1">
                         <input className="input" type="text" name="username" id="username" placeholder="Username" />
                         <button className="btn" type="submit">
-                            Connect
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                                <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+                                <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+                            </svg>
+                            <span>Connect</span>
                         </button>
                     </form>
                 </div>
@@ -84,7 +88,7 @@ export default function GamePage() {
             {connected && loading && <div>Loading room information...</div>}
             {connected && !roomName && !loading && (
                 <div className="space-y-4">
-                    <span>Playing as {username}</span>
+                    <p>Playing as {username}</p>
                     <hr className="hr" />
                     <form onSubmit={handleRoomSubmit} className="flex flex-col gap-1">
                         <input className="input" type="text" name="roomName" id="roomName" placeholder="Room Name" required />
@@ -94,9 +98,38 @@ export default function GamePage() {
                             </div>
                         )}
                         <div className="flex flex-row gap-1">
-                            <button className="btn">Join Room</button>
+                            <button className="btn">
+                                {/* Plus Icon */}
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    className="w-5 h-5">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+
+                                <span>Join</span>
+                            </button>
                             <button className="btn" type="button" onClick={handleSearchRooms}>
-                                Room Search
+                                {/* Magnifying glass icon */}
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    className="w-5 h-5">
+                                    <path d="M6.5 9a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0z" />
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 5a4 4 0 102.248 7.309l1.472 1.471a.75.75 0 101.06-1.06l-1.471-1.472A4 4 0 009 5z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+
+                                <span>Find</span>
                             </button>
                         </div>
                     </form>

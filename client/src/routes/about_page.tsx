@@ -6,7 +6,7 @@ export default function About() {
                 the <strong>boss</strong> in Tic-Tac-Toe. Built using Vite, Express, and Socket.IO, it's all about destroying
                 those who dare challenge you in Tic-Tac-Toe.
             </p>
-            <div className="flex flex-row gap-10">
+            <div className="flex sm:flex-row flex-col sm:gap-10">
                 {/* Vite SVG */}
                 <svg width="128px" height="128px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="none">
                     <title>file_type_vite</title>
