@@ -70,7 +70,6 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
         setRematchRequester(requesterUsername);
     };
 
-    // This will unmount the game component (when player leaves)
     const handlePlayerLeft = () => {
         setPlayerLeft(true);
     };
@@ -119,7 +118,7 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
     }, [roomInfo]);
 
     return (
-        <div className="relative">
+        <div className="relative mt-1">
             <div className="flex flex-col">
                 <p className="font-semibold">{roomInfo.self ?? "Retreiving information..."}</p>
                 <p className="text-sm opacity-75">{roomInfo.roomName}</p>
@@ -132,8 +131,12 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
             {/* Board + Text chat container */}
             {roomInfo.opponent && (
                 <>
-                    <p className="font-bold text-2xl text-center">GAME</p>
-                    <div className="relative flex lg:flex-row flex-col gap-2">
+                    <div className="flex justify-center items-center mt-4 mb-1">
+                        <div className="w-full h-0.5 bg-white/10 translate-y-0.5"></div>
+                        <p className="font-bold text-2xl text-center mx-2">GAME</p>
+                        <div className="w-full h-0.5 bg-white/10 translate-y-0.5"></div>
+                    </div>
+                    <div className="relative flex lg:flex-row flex-col gap-4">
                         <Board
                             rematchRequester={rematchRequester}
                             requestRematch={requestRematch}
@@ -142,8 +145,19 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
                             moveMadeResponse={moveMadeResponse}>
                             {gameInfo.board.map((row, rowIndex) => {
                                 return row.map((cell, colIndex) => {
+                                    // First cell = top left border should be rounded
+                                    // First row, last cell = top right border should be rounded
+                                    // Last row, first cell = bottom left border should be rounded
+                                    // Last cell = bottom right border should be rounded
+                                    let roundedCorners = "";
+                                    if (rowIndex === 0 && colIndex === 0) roundedCorners = "rounded-tl";
+                                    else if (rowIndex === 0 && colIndex === 2) roundedCorners = "rounded-tr";
+                                    else if (rowIndex === 2 && colIndex === 0) roundedCorners = "rounded-bl";
+                                    else if (rowIndex === 2 && colIndex === 2) roundedCorners = "rounded-br";
+
                                     return (
                                         <Cell
+                                            className={`${roundedCorners}`}
                                             onClick={() => makeMove(rowIndex, colIndex)}
                                             key={rowIndex + colIndex + (cell ?? "")}>
                                             {cell}
@@ -189,34 +203,34 @@ function Board({
         // Container Positioner
         <div className="relative w-full h-full grid grid-cols-3 gap-1">
             {/* Actual Game TTT Board */}
-            <div className="bg-black/50 border-2 border-black w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
+            <div className="bg-white/20 border-2 border-white/5 rounded w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
                 {children}
             </div>
             {/* Information Board */}
-            <div className="flex flex-col items-center justify-center gap-4 border-l-2 border-black bg-black/20">
+            <div className="flex flex-col items-center justify-center gap-4 p-2 bg-black/40 border-2 border-white/20 rounded">
                 <div className="grid grid-flow-row grid-cols-3 gap-y-1 items-center">
-                    <div className="col-span-2 sm:text-sm text-xs">
+                    <div className="col-span-2 text-xs">
                         <span className="opacity-75">You're Player</span>
                     </div>
-                    <div>{selfSymbol}</div>
-                    <div className="col-span-2 sm:text-sm text-xs">
+                    <div className="text-sm text-end">{selfSymbol}</div>
+                    <div className="col-span-2 text-xs">
                         <span className="opacity-75">Current Player</span>
                     </div>
-                    <div>{gameInfo.currentPlayer}</div>
-                    <div className="col-span-2 sm:text-sm text-xs">
+                    <div className="text-sm text-end">{gameInfo.currentPlayer}</div>
+                    <div className="col-span-2 text-xs">
                         <span className="opacity-75">Winner</span>
                     </div>
-                    <div>{gameInfo.winner ?? "No one"}</div>
-                    <div className="col-span-2 sm:text-sm text-xs">
+                    <div className="text-sm text-end">{gameInfo.winner ?? "N/A"}</div>
+                    <div className="col-span-2 text-xs">
                         <span className="opacity-75">Moves Made</span>
                     </div>
-                    <div>{gameInfo.moves}</div>
+                    <div className="text-sm text-end">{gameInfo.moves}</div>
                 </div>
                 {moveMadeResponse && (
                     <span
                         className={`${
                             moveMadeResponse.includes("success") ? "text-green-600" : "text-red-600"
-                        } text-sm opacity-75`}>
+                        } text-sm opacity-75 font-bold`}>
                         {moveMadeResponse}
                     </span>
                 )}
@@ -242,7 +256,10 @@ function Board({
 const Cell = forwardRef<HTMLButtonElement, ComponentProps<"button">>(function Cell({ className, children, ...rest }, ref) {
     return (
         // Give the cell same background color (but not transparent) to only keep the borders
-        <button ref={ref} {...rest} className={`${className ?? ""} bg-zinc-900 hover:bg-zinc-800 border-black/20 rounded-none`}>
+        <button
+            ref={ref}
+            {...rest}
+            className={`${className ?? ""} bg-black/90 hover:bg-black/60 active:bg-black/30 text-5xl font-black transition-all`}>
             {children}
         </button>
     );

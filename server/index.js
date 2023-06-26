@@ -209,7 +209,7 @@ io.on("connection", (socket) => {
             return;
         }
         if (result > 1) {
-            callback("move made successfully");
+            callback("successful move");
             io.in(roomName).emit("made move", gameInstance.getGameState());
         }
     });

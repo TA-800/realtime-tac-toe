@@ -44,12 +44,14 @@ export default function TextChat() {
     return (
         <div className="h-72 w-full flex flex-col gap-2 bg-zinc-900">
             {/* Text container with scrollbar */}
-            <div ref={msgsContainerRef} className="w-full h-full bg-black overflow-y-scroll flex flex-col gap-2 p-2">
+            <div
+                ref={msgsContainerRef}
+                className="w-full h-full bg-black overflow-y-scroll flex flex-col gap-2 p-2 rounded border-2 border-white/20">
                 {messages.map((msg, i) => {
                     return (
-                        <div key={i} className="p-4 rounded bg-gray-800">
+                        <div key={i} className="p-4 rounded bg-gray-800 border-2 border-white/5">
                             <p className="text-xs opacity-50">{msg.author}</p>
-                            <p>{msg.content}</p>
+                            <p className="max-w-xs">{msg.content}</p>
                         </div>
                     );
                 })}
@@ -61,7 +63,7 @@ export default function TextChat() {
                     autoComplete="off"
                     id="message"
                     name="message"
-                    className="w-full p-2 bg-black rounded-md"
+                    className="w-full p-2 bg-black rounded border-2 border-white/20"
                     placeholder="Enter message"></input>
                 <button className="btn">Send</button>
             </form>
