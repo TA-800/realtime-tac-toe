@@ -7,10 +7,9 @@ type MessageType = {
 };
 
 export default function TextChat() {
-    const { socket, connected } = useSocket();
+    const { socket } = useSocket();
     const [messages, setMessages] = useState<MessageType[]>([]);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    // const msgsContainerRef = useRef<HTMLDivElement>(null);
+    const msgsContainerRef = useRef<HTMLDivElement>(null);
 
     const handleMessageSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -19,6 +18,8 @@ export default function TextChat() {
         };
 
         socket.emit("send message", target.message.value);
+        // Clear input
+        target.message.value = "";
     };
 
     const handleMessage = (newMsg: { content: string; username: string }) => {
@@ -26,11 +27,9 @@ export default function TextChat() {
     };
 
     useEffect(() => {
-        if (!connected) return;
-
         socket.on("receive msg", handleMessage);
         return () => {
-            socket.on("receive msg", handleMessage);
+            socket.off("receive msg", handleMessage);
         };
     }, []);
 
@@ -38,13 +37,14 @@ export default function TextChat() {
     useEffect(() => {
         if (!messages) return;
 
-        scrollRef.current!.scrollIntoView({ behavior: "smooth" });
+        // Scroll msgsContainerRef to the bottom after every message (but don't scroll the page)
+        msgsContainerRef.current?.scrollTo({ top: msgsContainerRef.current?.scrollHeight, behavior: "smooth" });
     }, [messages]);
 
     return (
         <div className="h-72 w-full flex flex-col gap-2 bg-zinc-900">
             {/* Text container with scrollbar */}
-            <div className="w-full h-full bg-black overflow-y-scroll flex flex-col gap-2">
+            <div ref={msgsContainerRef} className="w-full h-full bg-black overflow-y-scroll flex flex-col gap-2">
                 {messages.map((msg, i) => {
                     return (
                         <div key={i} className="p-4 rounded bg-gray-800">
@@ -53,7 +53,7 @@ export default function TextChat() {
                         </div>
                     );
                 })}
-                <div ref={scrollRef} style={{ float: "left", clear: "both" }} />
+                <div style={{ float: "left", clear: "both" }} />
             </div>
             {/* Input + Send button */}
             <form onSubmit={handleMessageSubmit} className="w-full flex flex-row gap-2">

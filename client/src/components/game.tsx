@@ -21,7 +21,7 @@ type RoomInfoProps = {
 };
 
 export default function Game({ setRoomName }: { setRoomName: React.Dispatch<React.SetStateAction<string>> }) {
-    const { socket, connected } = useSocket();
+    const { socket } = useSocket();
     const [moveMadeResponse, setMoveMadeResponse] = useState("");
     const [rematchRequester, setRematchRequester] = useState("");
     const [playerLeft, setPlayerLeft] = useState(false);
@@ -77,8 +77,6 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
 
     // Get information about room state whenever component is mounted + set up socket listeners
     useEffect(() => {
-        if (!connected) return;
-
         // Get information about room
         socket.emit("get room info", (callback: RoomInfoProps) => {
             setRoomInfo(callback);
@@ -194,9 +192,9 @@ function Board({
             <div className="bg-black/50 border-r-2 border-black w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
                 {children}
             </div>
-            {/* Informational Board */}
+            {/* Information Board */}
             <div className="flex flex-col items-center justify-center gap-4 border-l-2 border-black bg-black/20">
-                <div className="grid grid-flow-row grid-cols-3 gap-y-1">
+                <div className="grid grid-flow-row grid-cols-3 gap-y-1 items-center">
                     <div className="col-span-2 sm:text-sm text-xs">
                         <span className="opacity-75">You're Player</span>
                     </div>
