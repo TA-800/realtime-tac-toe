@@ -44,7 +44,7 @@ export default function TextChat() {
     return (
         <div className="h-72 w-full flex flex-col gap-2 bg-zinc-900">
             {/* Text container with scrollbar */}
-            <div ref={msgsContainerRef} className="w-full h-full bg-black overflow-y-scroll flex flex-col gap-2">
+            <div ref={msgsContainerRef} className="w-full h-full bg-black overflow-y-scroll flex flex-col gap-2 p-2">
                 {messages.map((msg, i) => {
                     return (
                         <div key={i} className="p-4 rounded bg-gray-800">

@@ -119,7 +119,7 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
     }, [roomInfo]);
 
     return (
-        <div className="relative border-2 border-blue-500/50">
+        <div className="relative">
             <div className="flex flex-col">
                 <p className="font-semibold">{roomInfo.self ?? "Retreiving information..."}</p>
                 <p className="text-sm opacity-75">{roomInfo.roomName}</p>
@@ -189,7 +189,7 @@ function Board({
         // Container Positioner
         <div className="relative w-full h-full grid grid-cols-3 gap-1">
             {/* Actual Game TTT Board */}
-            <div className="bg-black/50 border-r-2 border-black w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
+            <div className="bg-black/50 border-2 border-black w-full col-span-2 h-72 grid grid-rows-3 grid-cols-3 gap-1">
                 {children}
             </div>
             {/* Information Board */}
