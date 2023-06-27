@@ -177,6 +177,8 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
 
                                     return (
                                         <Cell
+                                            // disable if game is over
+                                            disabled={gameInfo.winner !== null || gameInfo.moves === 9 || playerLeft}
                                             className={`${roundedCorners}`}
                                             onClick={() => makeMove(rowIndex, colIndex)}
                                             key={rowIndex + colIndex + (cell ?? "")}>
@@ -186,7 +188,7 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
                                 });
                             })}
                         </Board>
-                        <TextChat />
+                        <TextChat isDisabled={playerLeft} />
                     </div>
                 </>
             )}
@@ -262,9 +264,9 @@ function Board({
                     <Button
                         onPress={(e) => {
                             // Disable button on click
-                            e.target.ariaDisabled = "true";
                             // No other way to disable button (without state or ref) through e.target
                             (e.target as HTMLButtonElement).disabled = true;
+                            e.target.ariaDisabled = "true";
                             requestRematch();
                         }}
                         className="btn mt-auto">

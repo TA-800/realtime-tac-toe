@@ -194,14 +194,16 @@ io.on("connection", (socket) => {
     });
 
     socket.on("make move", (roomName, row, col, callback) => {
+        // Check if room name is provided
         if (!roomName) {
             callback("no room name provided");
             return;
         }
-
-        // Get game instance and call makeMove with row & col on it as parameters
+        // Check if game instance exists for the room
         let gameInstance = gameInstances.get(roomName);
+        if (!gameInstance) return;
 
+        // Call makeMove with row & col on it as parameters
         let result = gameInstance.makeMove(socket.data.playerSymbol, row, col);
 
         if (result <= 1) {

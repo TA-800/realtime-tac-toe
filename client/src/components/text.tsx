@@ -7,7 +7,7 @@ type MessageType = {
     author: string;
 };
 
-export default function TextChat() {
+export default function TextChat({ isDisabled }: { isDisabled: boolean }) {
     const { socket } = useSocket();
     const [messages, setMessages] = useState<MessageType[]>([]);
     const msgsContainerRef = useRef<HTMLDivElement>(null);
@@ -61,13 +61,14 @@ export default function TextChat() {
             {/* Input + Send button */}
             <form onSubmit={handleMessageSubmit} className="w-full flex flex-row gap-2">
                 <input
+                    disabled={isDisabled}
                     required
                     autoComplete="off"
                     id="message"
                     name="message"
                     className="w-full p-2 bg-black rounded border-2 border-white/20"
                     placeholder="Enter message"></input>
-                <Button type="submit">
+                <Button isDisabled={isDisabled} type="submit">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                         <path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086l-1.414 4.926a.75.75 0 00.826.95 28.896 28.896 0 0015.293-7.154.75.75 0 000-1.115A28.897 28.897 0 003.105 2.289z" />
                     </svg>
