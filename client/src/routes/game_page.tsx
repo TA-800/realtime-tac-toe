@@ -1,3 +1,4 @@
+import Button from "../components/button";
 import Game from "../components/game";
 import useSocket from "../components/useSocketHook";
 import { useState, useEffect } from "react";
@@ -74,14 +75,14 @@ export default function GamePage() {
             {!connected && (
                 <div>
                     <form onSubmit={onUsernameSubmit} className="flex flex-col gap-1">
-                        <input className="input" type="text" name="username" id="username" placeholder="Username" />
-                        <button className="btn" type="submit">
+                        <input className="input" type="text" name="username" id="username" placeholder="Username" required />
+                        <Button type="submit">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                                 <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
                                 <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
                             </svg>
                             <span>Connect</span>
-                        </button>
+                        </Button>
                     </form>
                 </div>
             )}
@@ -98,8 +99,8 @@ export default function GamePage() {
                             </div>
                         )}
                         <div className="flex flex-row gap-1">
-                            <button className="btn">
-                                {/* Plus Icon */}
+                            {/* Plus Icon */}
+                            <Button type="submit">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 20 20"
@@ -113,8 +114,8 @@ export default function GamePage() {
                                 </svg>
 
                                 <span>Join</span>
-                            </button>
-                            <button className="btn" type="button" onClick={handleSearchRooms}>
+                            </Button>
+                            <Button type="button" onPress={handleSearchRooms}>
                                 {/* Magnifying glass icon */}
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -130,21 +131,37 @@ export default function GamePage() {
                                 </svg>
 
                                 <span>Find</span>
-                            </button>
+                            </Button>
                         </div>
                     </form>
                     {/* List of rooms */}
                     <div className="h-64 w-64 overflow-y-scroll bg-black flex flex-col gap-1 p-2">
-                        {gameRooms.map((roomName, index) => {
-                            return (
-                                <button
-                                    onClick={() => handleEmitRoomSearch(roomName)}
-                                    key={index}
-                                    className="bg-slate-800 p-2 rounded hover:border-white/20 border-2 border-white/0 transition">
-                                    {roomName}
-                                </button>
-                            );
-                        })}
+                        {!gameRooms.length && (
+                            <div>
+                                <p className="opacity-75 text-sm">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                        className="w-5 h-5 inline-block align-top">
+                                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                    </svg>
+                                    <span>No rooms found</span>.
+                                </p>
+                                <p className="opacity-50 text-xs">Try again or create one yourself!</p>
+                            </div>
+                        )}
+                        {gameRooms.length > 0 &&
+                            gameRooms.map((roomName, index) => {
+                                return (
+                                    <button
+                                        onClick={() => handleEmitRoomSearch(roomName)}
+                                        key={index}
+                                        className="bg-slate-800 p-2 rounded hover:border-white/20 border-2 border-white/0 transition">
+                                        {roomName}
+                                    </button>
+                                );
+                            })}
                     </div>
                 </div>
             )}
