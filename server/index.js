@@ -230,6 +230,9 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send message", (content) => {
+        // Don't send empty messages
+        if (!content) return;
+
         // Get room
         let roomName = [...socket.rooms][1];
         let username = socket.data.username;

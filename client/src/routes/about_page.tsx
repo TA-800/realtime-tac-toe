@@ -1,7 +1,7 @@
 export default function About() {
     return (
         <div className="flex flex-col gap-1 items-center">
-            <p className="max-w-7xl">
+            <p className="max-w-7xl self-start">
                 Check out this real-time Tic-Tac-Toe game with live chat! It's the easiest way to show your friends who truly is
                 the <strong>boss</strong> in Tic-Tac-Toe. Built using Vite, Express, and Socket.IO, it's all about destroying
                 those who dare challenge you in Tic-Tac-Toe.
@@ -60,6 +60,17 @@ export default function About() {
                     src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/socketio/socketio-original-wordmark.svg"
                 />
             </div>
+            <p className="self-start">
+                Icons pulled from <a href="https://heroicons.com/">Heroicons</a>, and{" "}
+                <a target="_blank" href="https://icons8.com/icon/10562/sword">
+                    Sword
+                </a>{" "}
+                icon by{" "}
+                <a target="_blank" href="https://icons8.com">
+                    Icons8
+                </a>
+                .
+            </p>
         </div>
     );
 }

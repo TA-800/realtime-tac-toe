@@ -60,6 +60,7 @@ export default function TextChat() {
             {/* Input + Send button */}
             <form onSubmit={handleMessageSubmit} className="w-full flex flex-row gap-2">
                 <input
+                    required
                     autoComplete="off"
                     id="message"
                     name="message"

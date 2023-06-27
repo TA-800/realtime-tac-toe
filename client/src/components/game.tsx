@@ -1,6 +1,7 @@
 import TextChat from "./text";
 import useSocket from "./useSocketHook";
 import { ComponentProps, forwardRef, useEffect, useState } from "react";
+import sword from "../icons8-sword.png";
 
 type GameInfoProps = {
     board: [
@@ -120,12 +121,34 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
     return (
         <div className="relative mt-1">
             <div className="flex flex-col">
-                <p className="font-semibold">{roomInfo.self ?? "Retreiving information..."}</p>
-                <p className="text-sm opacity-75">{roomInfo.roomName}</p>
-                <p className="text-xs opacity-50">
-                    {roomInfo.opponent
-                        ? `Playing against ${roomInfo.opponent} (${roomInfo.selfSymbol === "X" ? "O" : "X"})`
-                        : "Waiting for Player 2..."}
+                <p className="flex gap-1 items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                        <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
+                    </svg>
+                    <span className="font-semibold">{roomInfo.self ?? "Retreiving information..."}</span>
+                </p>
+                <p className="flex gap-2.5 items-center">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-3.5 h-3.5 translate-x-0.5">
+                        <path
+                            fillRule="evenodd"
+                            d="M8.157 2.175a1.5 1.5 0 00-1.147 0l-4.084 1.69A1.5 1.5 0 002 5.251v10.877a1.5 1.5 0 002.074 1.386l3.51-1.453 4.26 1.763a1.5 1.5 0 001.146 0l4.083-1.69A1.5 1.5 0 0018 14.748V3.873a1.5 1.5 0 00-2.073-1.386l-3.51 1.452-4.26-1.763zM7.58 5a.75.75 0 01.75.75v6.5a.75.75 0 01-1.5 0v-6.5A.75.75 0 017.58 5zm5.59 2.75a.75.75 0 00-1.5 0v6.5a.75.75 0 001.5 0v-6.5z"
+                            clipRule="evenodd"
+                        />
+                    </svg>
+
+                    <span className="text-sm opacity-75">{roomInfo.roomName}</span>
+                </p>
+                <p className="flex gap-3 items-center">
+                    <img width={12} height={12} src={sword} className="filter invert translate-x-0.5" />
+                    <span className="text-xs opacity-50">
+                        {roomInfo.opponent
+                            ? `Playing against ${roomInfo.opponent} (${roomInfo.selfSymbol === "X" ? "O" : "X"})`
+                            : "Waiting for Player 2..."}
+                    </span>
                 </p>
             </div>
             {/* Board + Text chat container */}
@@ -241,7 +264,14 @@ function Board({
                             requestRematch();
                         }}
                         className="btn mt-auto">
-                        Rematch
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                            <path
+                                fillRule="evenodd"
+                                d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
+                                clipRule="evenodd"
+                            />
+                        </svg>
+                        <span>Rematch</span>
                     </button>
                     {rematchRequester && <p className="text-xs opacity-50">{rematchRequester} is requesting rematch.</p>}
                 </div>
