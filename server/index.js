@@ -41,6 +41,13 @@ io.on("connection", (socket) => {
     Each time a client connects to the server, a new socket object is created to represent that connection.
     Each socket object can be thought of as a representation of a user or a client that is connected to the server. */
 
+    // Do not allow user to join if username is empty or only whitespace
+    if (!socket.handshake.auth.username || !socket.handshake.auth.username.trim()) {
+        console.log("User tried to connect without a username.");
+        socket.disconnect();
+        return;
+    }
+
     socket.data.username = socket.handshake.auth.username;
     console.log(`${socket.data.username} (${socket.id}) connected.`);
 
@@ -232,8 +239,8 @@ io.on("connection", (socket) => {
     });
 
     socket.on("send message", (content) => {
-        // Don't send empty messages
-        if (!content) return;
+        // Don't send empty messages or messages with only whitespace
+        if (!content || !content.trim()) return;
 
         // Get room
         let roomName = [...socket.rooms][1];

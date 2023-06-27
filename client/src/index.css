@@ -3,12 +3,9 @@
 @tailwind utilities;
 
 @layer components {
-    .btn {
-        @apply flex flex-row gap-1 justify-center items-center bg-blue-600 text-white font-semibold px-3 py-2 rounded w-fit h-11 hover:bg-blue-700 disabled:bg-gray-700
-        border-2 border-transparent active:enabled:-translate-x-px active:enabled:translate-y-px active:enabled:bg-blue-800 active:enabled:border-blue-600;
-    }
     .input {
-        @apply bg-gray-700 text-white font-semibold px-4 py-2 rounded w-fit h-11;
+        @apply bg-gray-700 text-white font-semibold px-4 py-2 rounded w-fit h-11
+        focus:outline-none focus-visible:outline-1 focus-visible:outline-blue-400 focus-visible:outline-offset-2;
     }
     .hr {
         @apply opacity-25;
