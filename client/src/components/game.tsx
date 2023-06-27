@@ -2,6 +2,7 @@ import TextChat from "./text";
 import useSocket from "./useSocketHook";
 import { ComponentProps, forwardRef, useEffect, useState } from "react";
 import sword from "../icons8-sword.png";
+import Button from "./button";
 
 type GameInfoProps = {
     board: [
@@ -192,9 +193,9 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
             {playerLeft && (
                 <div className="absolute top-0 left-0 w-full h-full bg-zinc-900/80 flex flex-col justify-center items-center">
                     <span>Player has disconnected</span>
-                    <button onClick={() => setRoomName("")} className="btn mt-1">
+                    <Button onPress={() => setRoomName("")} className="btn mt-1">
                         Okay
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>
@@ -258,9 +259,12 @@ function Board({
             {(gameInfo.winner !== null || gameInfo.moves === 9) && (
                 <div className="absolute top-0 left-0 w-full h-full bg-zinc-900/80 flex flex-col justify-center items-center">
                     <span className="text-5xl font-black mt-auto">{gameInfo.winner ? `${gameInfo.winner} wins!` : "Draw."}</span>
-                    <button
-                        onClick={(e) => {
-                            e.currentTarget.disabled = true;
+                    <Button
+                        onPress={(e) => {
+                            // Disable button on click
+                            e.target.ariaDisabled = "true";
+                            // No other way to disable button (without state or ref) through e.target
+                            (e.target as HTMLButtonElement).disabled = true;
                             requestRematch();
                         }}
                         className="btn mt-auto">
@@ -272,7 +276,7 @@ function Board({
                             />
                         </svg>
                         <span>Rematch</span>
-                    </button>
+                    </Button>
                     {rematchRequester && <p className="text-xs opacity-50">{rematchRequester} is requesting rematch.</p>}
                 </div>
             )}
