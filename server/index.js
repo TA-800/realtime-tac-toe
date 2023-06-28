@@ -22,7 +22,7 @@ const server = http.createServer(app);
 /* Connect the socket io to the server we just created */
 const io = new Server(server, {
     cors: {
-        origin: "*",
+        origin: ["http://localhost:5173", "https://realtime-tac-toe.onrender.com/"],
         methods: ["GET", "POST"],
     },
 });
@@ -32,6 +32,8 @@ let availableRooms = [];
 let gameInstances = new Map();
 // Map of room names to rematch requests
 let rematchRequests = [];
+// Max number of connections to prevent arrays and maps from growing too large
+const MAX_CONNECTIONS = 1000;
 
 /* Initiate and detect events & connections on the socket.io server. 
 Regular HTTP requests won't work because socket.io connections operate differently,
@@ -40,6 +42,12 @@ io.on("connection", (socket) => {
     /* The socket parameter represents an individual connection to the Socket.IO server.
     Each time a client connects to the server, a new socket object is created to represent that connection.
     Each socket object can be thought of as a representation of a user or a client that is connected to the server. */
+    if (io.engine.clientsCount > MAX_CONNECTIONS) {
+        // Tell client to disconnect if there are too many connections
+        io.to(socket.id).emit("too many connections");
+        socket.disconnect();
+        return;
+    }
 
     // Do not allow user to join if username is empty or only whitespace
     if (!socket.handshake.auth.username || !socket.handshake.auth.username.trim()) {
@@ -61,7 +69,6 @@ io.on("connection", (socket) => {
 
     socket.on("disconnecting", () => {
         let currentRoom = [...socket.rooms][1];
-        console.log("Before:", currentRoom);
 
         // Make other player leave
         io.to(currentRoom).emit("player left");
@@ -248,6 +255,11 @@ io.on("connection", (socket) => {
 
         io.to(roomName).emit("receive msg", { content: content, username: username });
     });
+});
+
+// Display server status
+app.get("/", (req, res) => {
+    res.send("Server is running.");
 });
 
 // Clear all rooms and game instances

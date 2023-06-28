@@ -11,7 +11,7 @@ export default function Root() {
             <Navbar />
             {/* Main content */}
             <SocketProvider>
-                <div className="rounded-md border-2 border-white/20 bg-zinc-900 sm:p-8 px-2 py-4">
+                <div className="rounded-md border-2 border-white/20 bg-zinc-900 sm:p-8 px-2 py-4 sm:w-auto w-full">
                     <Outlet />
                 </div>
             </SocketProvider>

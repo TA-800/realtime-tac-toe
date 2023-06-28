@@ -4,7 +4,7 @@
 
 @layer components {
     .input {
-        @apply bg-gray-700 text-white font-semibold px-4 py-2 rounded w-fit h-11
+        @apply bg-gray-700 text-white font-semibold px-4 py-2 rounded w-full h-11
         focus:outline-none focus-visible:outline-1 focus-visible:outline-blue-400 focus-visible:outline-offset-2;
     }
     .hr {

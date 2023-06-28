@@ -9,6 +9,7 @@ export default function GamePage() {
     const [gameRooms, setGameRooms] = useState<string[]>([]);
     const [roomName, setRoomName] = useState("");
     const [roomJoinError, setRoomJoinError] = useState("");
+    const [connectError, setConnectError] = useState("");
     const [loading, setLoading] = useState(true);
 
     const onUsernameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -54,10 +55,16 @@ export default function GamePage() {
         handleEmitRoomSearch(roomName);
     };
 
-    useEffect(() => {
-        if (!connected) return;
+    const onTooManyConnections = () => {
+        setConnectError("Server maxed out, retry later!");
+    };
 
+    useEffect(() => {
         socket.on("connect_error", handleConnectError);
+
+        socket.on("too many connections", onTooManyConnections);
+
+        if (!connected) return;
 
         // Check if we have already connected before
         socket.emit("check joined room", (roomNameCallback: string) => {
@@ -68,12 +75,14 @@ export default function GamePage() {
 
         return () => {
             socket.off("connect_error", handleConnectError);
+            socket.off("too many connections", onTooManyConnections);
         };
     }, [connected]);
 
     return (
         <div>
-            <div className="flex flex-row items-center justify-between gap-10">
+            {/* Header: Server connection status + Disconnect button */}
+            <div className="flex sm:flex-row sm:gap-10 flex-col gap-1 sm:items-center justify-between">
                 <span className="text-sm opacity-75">
                     Server connection status: {connected ? "Connected." : "Not connected."}
                 </span>
@@ -99,15 +108,16 @@ export default function GamePage() {
 
                             <span>Connect</span>
                         </Button>
+                        {connectError && <p className="text-red-500 font-semibold">{connectError}</p>}
                     </form>
                 </div>
             )}
             {connected && loading && <div>Loading room information...</div>}
             {connected && !roomName && !loading && (
-                <div className="space-y-4">
+                <div className="p-2">
                     <p>Playing as {username}</p>
-                    <hr className="hr" />
-                    <form onSubmit={handleRoomSubmit} className="flex flex-col gap-1">
+                    <hr className="hr mt-1 mb-2" />
+                    <form onSubmit={handleRoomSubmit} className="flex flex-col gap-2 mb-2">
                         <input className="input" type="text" name="roomName" id="roomName" placeholder="Room Name" required />
                         {roomJoinError && (
                             <div>
@@ -151,7 +161,7 @@ export default function GamePage() {
                         </div>
                     </form>
                     {/* List of rooms */}
-                    <div className="h-64 w-64 overflow-y-scroll bg-black flex flex-col gap-1 p-2">
+                    <div className="h-64 w-64 overflow-y-scroll bg-black flex flex-col gap-1 p-2 rounded-md border-2 border-white/20">
                         {!gameRooms.length && (
                             <div>
                                 <p className="opacity-75 text-sm">

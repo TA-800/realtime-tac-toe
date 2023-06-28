@@ -1,8 +1,8 @@
 import { io } from "socket.io-client";
 import { createContext, useEffect, useState } from "react";
 
-/* Start a websocket connection to the server. */
-const socket = io("http://localhost:3000", {
+let url = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+const socket = io(url, {
     autoConnect: false,
 });
 
