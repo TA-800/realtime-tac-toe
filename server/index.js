@@ -33,7 +33,7 @@ let gameInstances = new Map();
 // Map of room names to rematch requests
 let rematchRequests = [];
 // Max number of connections to prevent arrays and maps from growing too large
-const MAX_CONNECTIONS = 1000;
+const MAX_CONNECTIONS = 100;
 
 /* Initiate and detect events & connections on the socket.io server. 
 Regular HTTP requests won't work because socket.io connections operate differently,

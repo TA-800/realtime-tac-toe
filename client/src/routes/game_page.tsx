@@ -11,9 +11,11 @@ export default function GamePage() {
     const [roomJoinError, setRoomJoinError] = useState("");
     const [connectError, setConnectError] = useState("");
     const [loading, setLoading] = useState(true);
+    const [isAttemptingConnection, setIsAttemptingConnection] = useState(false);
 
     const onUsernameSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setIsAttemptingConnection(true);
         const username = (event.target as HTMLFormElement).username.value;
         setUsername(username);
         socket.auth = { username };
@@ -66,6 +68,8 @@ export default function GamePage() {
 
         if (!connected) return;
 
+        if (connected) setIsAttemptingConnection(false);
+
         // Check if we have already connected before
         socket.emit("check joined room", (roomNameCallback: string) => {
             // Callback will be a roomName string
@@ -100,12 +104,29 @@ export default function GamePage() {
                 <div>
                     <form onSubmit={onUsernameSubmit} className="flex flex-col gap-2 mt-1">
                         <input className="input" type="text" name="username" id="username" placeholder="Username" required />
-                        <Button type="submit">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                                <path d="M16.364 3.636a.75.75 0 00-1.06 1.06 7.5 7.5 0 010 10.607.75.75 0 001.06 1.061 9 9 0 000-12.728zM4.697 4.697a.75.75 0 00-1.061-1.06 9 9 0 000 12.727.75.75 0 101.06-1.06 7.5 7.5 0 010-10.607z" />
-                                <path d="M12.475 6.465a.75.75 0 011.06 0 5 5 0 010 7.07.75.75 0 11-1.06-1.06 3.5 3.5 0 000-4.95.75.75 0 010-1.06zM7.525 6.465a.75.75 0 010 1.06 3.5 3.5 0 000 4.95.75.75 0 01-1.06 1.06 5 5 0 010-7.07.75.75 0 011.06 0zM11 10a1 1 0 11-2 0 1 1 0 012 0z" />
-                            </svg>
-
+                        <Button type="submit" isDisabled={isAttemptingConnection}>
+                            {isAttemptingConnection ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    className="w-5 h-5 animate-spin animate-pulse">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    className="w-5 h-5">
+                                    <path d="M16.364 3.636a.75.75 0 00-1.06 1.06 7.5 7.5 0 010 10.607.75.75 0 001.06 1.061 9 9 0 000-12.728zM4.697 4.697a.75.75 0 00-1.061-1.06 9 9 0 000 12.727.75.75 0 101.06-1.06 7.5 7.5 0 010-10.607z" />
+                                    <path d="M12.475 6.465a.75.75 0 011.06 0 5 5 0 010 7.07.75.75 0 11-1.06-1.06 3.5 3.5 0 000-4.95.75.75 0 010-1.06zM7.525 6.465a.75.75 0 010 1.06 3.5 3.5 0 000 4.95.75.75 0 01-1.06 1.06 5 5 0 010-7.07.75.75 0 011.06 0zM11 10a1 1 0 11-2 0 1 1 0 012 0z" />
+                                </svg>
+                            )}
                             <span>Connect</span>
                         </Button>
                         {connectError && <p className="text-red-500 font-semibold">{connectError}</p>}
