@@ -59,12 +59,20 @@ export default function GamePage() {
 
     const onTooManyConnections = () => {
         setConnectError("Server maxed out, retry later!");
+        setIsAttemptingConnection(false);
+    };
+
+    const handleInvalidUsername = () => {
+        setConnectError("Invalid username!");
+        setIsAttemptingConnection(false);
     };
 
     useEffect(() => {
         socket.on("connect_error", handleConnectError);
 
         socket.on("too many connections", onTooManyConnections);
+
+        socket.on("invalid username", handleInvalidUsername);
 
         if (!connected) return;
 
@@ -81,6 +89,7 @@ export default function GamePage() {
         return () => {
             socket.off("connect_error", handleConnectError);
             socket.off("too many connections", onTooManyConnections);
+            socket.off("invalid username", handleInvalidUsername);
         };
     }, [connected]);
 

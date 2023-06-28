@@ -51,7 +51,7 @@ io.on("connection", (socket) => {
 
     // Do not allow user to join if username is empty or only whitespace
     if (!socket.handshake.auth.username || !socket.handshake.auth.username.trim()) {
-        console.log("User tried to connect without a username.");
+        io.to(socket.id).emit("invalid username");
         socket.disconnect();
         return;
     }
