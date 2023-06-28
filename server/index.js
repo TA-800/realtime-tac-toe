@@ -22,7 +22,7 @@ const server = http.createServer(app);
 /* Connect the socket io to the server we just created */
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:5173", "https://realtime-tac-toe.onrender.com/"],
+        origin: ["http://localhost:5173", "https://realtime-tac-toe.onrender.com"],
         methods: ["GET", "POST"],
     },
 });
