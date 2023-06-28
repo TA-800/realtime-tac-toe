@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
+    "esbuild": "^0.18.10",
     "react": "^18.2.0",
     "react-aria": "^3.25.0",
     "react-dom": "^18.2.0",
