@@ -80,6 +80,10 @@ io.on("connection", (socket) => {
         rematchRequests = rematchRequests.filter((room) => room !== currentRoom);
     });
 
+    socket.on("get username", (callback) => {
+        callback(socket.data.username);
+    });
+
     socket.on("get room usernames", async (roomName) => {
         // Get all usernames in a room
         const usersOfRoom = await io.in(roomName).fetchSockets();

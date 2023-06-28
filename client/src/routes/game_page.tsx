@@ -70,6 +70,7 @@ export default function GamePage() {
 
         if (connected) setIsAttemptingConnection(false);
 
+        if (!username) socket.emit("get username", (usernameCallback: string) => setUsername(usernameCallback));
         // Check if we have already connected before
         socket.emit("check joined room", (roomNameCallback: string) => {
             // Callback will be a roomName string
