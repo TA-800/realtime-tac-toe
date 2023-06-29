@@ -100,13 +100,13 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
 
     // Get information about game state whenever component is mounted (after we have roomInfo)
     useEffect(() => {
+        if (!roomInfo) return;
+
         if (!roomInfo.roomName) return;
 
         socket.emit("get game info", roomInfo.roomName, (callback: { gameState: GameInfoProps | null }) => {
             if (!callback.gameState) {
-                if (!roomInfo.opponent) {
-                    return;
-                }
+                if (!roomInfo.opponent) return;
 
                 // If we have an opponent but no game, then a game must be started
                 socket.emit("start game", roomInfo.roomName, (callback: string) => {
@@ -118,6 +118,9 @@ export default function Game({ setRoomName }: { setRoomName: React.Dispatch<Reac
             setGameInfo(callback.gameState);
         });
     }, [roomInfo]);
+
+    // If roomInfo is null (this comp. shouldn't even render but if it is), then return loading message
+    if (!roomInfo) return <div>Retreiving room information...</div>;
 
     return (
         <div className="relative mt-1">
